@@ -1,0 +1,593 @@
+Examen 2                           Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+SISTEMA WEB PARA LA GESTIÓN DE CITAS MÉDICAS PARA LA CLÍNICA VIDA SALUD
+
+
+
+
+PROYECTO DE EXAMEN PARCIAL II
+Sistema Web de Gestión de Citas Médicas
+Desarrollo web con PHP y PostgreSQL .Duración: 4 semanas
+1. Descripción del caso de estudio
+1.1. Nombre del proyecto
+Desarrollo de un sistema web para la gestión de citas médicas en una
+clínica privada.
+1.2. Antecedentes
+La Clínica Vida Salud es un establecimiento médico ficticio que brinda servicios
+de atención en distintas especialidades, como medicina general, pediatría,
+ginecología y odontología.
+Actualmente, la clínica administra sus citas médicas mediante registros en
+cuadernos, llamadas telefónicas y hojas de cálculo. Este procedimiento presenta
+dificultades para organizar los horarios de los médicos, controlar las citas
+programadas y mantener actualizada la información de los pacientes.
+La recepción de la clínica es responsable de registrar a los pacientes, consultar
+la disponibilidad de los médicos, programar las citas y comunicar a los pacientes
+la fecha y hora de su atención.
+Sin embargo, debido al registro manual, se han presentado problemas como los
+siguientes:
+   1. Duplicación de citas para un mismo médico y horario.
+   2. Pérdida o registro incorrecto de los datos de los pacientes.
+   3. Dificultad para conocer los horarios disponibles de los médicos.
+   4. Falta de control sobre las citas canceladas y las inasistencias.
+   5. Demoras en la búsqueda del historial de citas de un paciente.
+   6. Dificultad para obtener reportes de las atenciones programadas.
+
+
+                                       1
+Examen 2                             Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+   7. Falta de información actualizada para la administración de la clínica.
+Ante esta situación, la dirección de la Clínica Vida Salud ha decidido implementar
+un sistema web que permita centralizar la información y automatizar los
+principales procesos de gestión de citas médicas.
+1.3. Planteamiento del problema
+¿Cómo desarrollar un sistema web utilizando PHP y PostgreSQL que permita
+administrar pacientes, médicos, especialidades y citas médicas, evitando
+conflictos de horarios y facilitando el control de las atenciones de la Clínica Vida
+Salud?
+1.4. Objetivo general
+Desarrollar un sistema web de gestión de citas médicas utilizando PHP como
+lenguaje de programación del lado del servidor y PostgreSQL como sistema
+gestor de base de datos, con el propósito de mejorar el registro, la programación,
+el seguimiento y el control de las citas médicas.
+1.5. Objetivos específicos
+      Analizar los procesos de registro y programación de citas de una clínica.
+      Diseñar una base de datos relacional con tablas relacionadas mediante
+       claves primarias y foráneas.
+      Implementar formularios para el registro, consulta, modificación y
+       desactivación de pacientes y médicos.
+      Gestionar las especialidades médicas y los horarios de atención.
+      Programar citas verificando la disponibilidad del médico.
+      Controlar los estados de las citas médicas.
+      Generar reportes de citas por fecha, médico, especialidad y estado.
+      Aplicar validaciones de datos y mecanismos básicos de seguridad.
+      Realizar pruebas para verificar el correcto funcionamiento del sistema.
+
+
+2. Alcance del sistema
+El sistema será una aplicación web accesible desde un navegador, desarrollada
+con PHP, PostgreSQL, HTML y CSS. Puede utilizar JavaScript para mejorar la
+interacción de los formularios.
+El sistema estará destinado principalmente al personal administrativo de la
+clínica.
+El sistema SÍ deberá permitir:
+      Registrar y consultar pacientes.
+
+                                          2
+Examen 2                               Sistemas 1      MSc.Ing. Angélica Gazón Cuéllar
+
+
+      Registrar médicos y sus especialidades.
+      Definir horarios de atención.
+      Consultar disponibilidad de citas.
+      Registrar, reprogramar y cancelar citas.
+      Registrar la asistencia o inasistencia del paciente.
+      Consultar el historial de citas.
+      Generar reportes administrativos.
+      Administrar usuarios y permisos básicos.
+Esta delimitación permite que los estudiantes desarrollen una aplicación
+funcional en cuatro semanas sin incorporar funcionalidades que excedan el nivel
+esperado.
+3. Descripción de los usuarios del sistema
+
+El sistema tendrá cuatro roles principales.
+
+
+
+
+3.1. Administrador
+Es responsable de configurar y supervisar el sistema.
+      Registrar y administrar usuarios.
+      Asignar roles.
+      Registrar médicos y especialidades.
+      Consultar los reportes generales.
+      Activar o desactivar registros.
+
+
+
+
+                                           3
+Examen 2                              Sistemas 1      MSc.Ing. Angélica Gazón Cuéllar
+
+
+
+
+3.2. Recepcionista
+Es responsable de gestionar las citas de los pacientes.
+      Registrar nuevos pacientes.
+      Buscar pacientes existentes.
+      Consultar médicos y horarios disponibles.
+      Programar, reprogramar y cancelar citas.
+      Registrar asistencia e inasistencia.
+      Consultar citas por fecha y estado.
+
+
+
+
+3.3. Médico
+Puede consultar su agenda de atención.
+      Consultar las citas asignadas.
+      Visualizar los datos básicos necesarios del paciente.
+      Consultar la fecha y hora de cada cita.
+      Identificar citas pendientes, atendidas y canceladas.
+
+
+                                          4
+Examen 2                             Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+      Marcar una cita como atendida, si ese permiso le ha sido asignado.
+Cada usuario deberá iniciar sesión con su nombre de usuario o correo
+electrónico y contraseña. Las opciones disponibles dependerán de su rol.
+3.4 Perfil de pacientes para una app de citas médicas
+El perfil del paciente es el espacio donde cada usuario puede registrar sus
+datos personales, administrar su información médica y gestionar sus citas desde
+la aplicación.
+Datos que debe incluir el perfil
+
+Sección              Campos principales
+
+Datos personales Nombre completo, documento de identidad, fecha de
+                 nacimiento y sexo, si es necesario
+
+Contacto             Teléfono, correo electrónico y dirección
+
+Información          Tipo de sangre, alergias, enfermedades                crónicas,
+médica               medicamentos y antecedentes relevantes
+
+Contacto           de Nombre, parentesco y teléfono
+emergencia
+
+Gestión de citas     Especialidad, médico, fecha, hora, modalidad y estado de la
+                     cita
+
+Cuenta               Contraseña, notificaciones y preferencias de privacidad
+
+3. Funcionalidades principales
+      Registro e inicio de sesión: acceso seguro para cada paciente.
+      Edición del perfil: actualización de datos personales y de contacto.
+      Reserva de citas: búsqueda de médicos por especialidad, ubicación y
+       disponibilidad.
+      Seguimiento de citas: citas pendientes, confirmadas, completadas y
+       canceladas.
+      Recordatorios automáticos: avisos de próximas consultas.
+      Historial médico: acceso autorizado a información clínica relevante.
+      Seguridad: protección de datos sensibles y control de acceso.
+
+
+
+                                         5
+Examen 2                                 Sistemas 1    MSc.Ing. Angélica Gazón Cuéllar
+
+
+4. Requerimientos funcionales
+Los estudiantes deberán implementar los siguientes módulos.
+RF01. Inicio de sesión y control de acceso
+El sistema deberá permitir que los usuarios autorizados ingresen mediante sus
+credenciales.
+Funciones:
+      Validar usuario y contraseña.
+      Iniciar una sesión segura.
+      Identificar el rol del usuario.
+      Mostrar un menú según los permisos correspondientes.
+      Cerrar la sesión.
+      Impedir el acceso a páginas internas cuando no exista una sesión válida.
+Las contraseñas deberán almacenarse mediante un mecanismo de hash seguro
+de PHP, como password_hash(), y verificarse mediante password_verify().
+RF02. Gestión de pacientes
+El sistema deberá permitir registrar pacientes con los siguientes datos:
+
+       Campo                  Descripción
+
+       Código                 Identificador único del paciente
+
+       CI                     Documento de identidad, único cuando corresponda
+
+       Nombres                Nombres del paciente
+
+       Apellidos              Apellidos del paciente
+
+       Fecha de nacimiento Fecha de nacimiento
+
+       Sexo                   Dato demográfico, según el formulario definido
+
+       Teléfono               Número de contacto
+
+       Correo electrónico     Correo de contacto, opcional
+
+
+
+
+                                             6
+Examen 2                              Sistemas 1       MSc.Ing. Angélica Gazón Cuéllar
+
+
+      Dirección               Domicilio, opcional
+
+      Estado                  Activo o inactivo
+
+Operaciones requeridas:
+     Registrar un paciente.
+     Listar los pacientes.
+     Buscar por CI, nombre o apellido.
+     Modificar sus datos.
+     Consultar sus citas anteriores.
+     Desactivar un registro sin eliminar el historial asociado.
+Regla: no se permitirá registrar dos pacientes con el mismo documento de
+identidad cuando este sea el identificador proporcionado.
+RF03. Gestión de médicos
+El sistema deberá permitir administrar la información de los médicos.
+Campos mínimos:
+     Código del médico.
+     Número de registro profesional.
+     Nombres y apellidos.
+     Teléfono.
+     Correo electrónico.
+     Especialidad o especialidades.
+     Estado: activo o inactivo.
+Operaciones:
+     Registrar médicos.
+     Consultar el listado de médicos.
+     Buscar por nombre o especialidad.
+     Modificar sus datos.
+     Consultar su agenda.
+     Activar o desactivar médicos.
+Un médico inactivo no podrá recibir nuevas citas, pero sus citas históricas
+deberán conservarse.
+
+                                          7
+Examen 2                             Sistemas 1         MSc.Ing. Angélica Gazón Cuéllar
+
+
+RF04. Gestión de especialidades médicas
+El sistema deberá administrar las especialidades que ofrece la clínica.
+Ejemplos:
+     Medicina general.
+     Pediatría.
+     Ginecología.
+     Odontología.
+     Cardiología.
+Cada especialidad tendrá un identificador, nombre, descripción opcional y
+estado.
+No se permitirá registrar dos especialidades con el mismo nombre normalizado.
+RF05. Gestión de horarios de atención
+El administrador deberá registrar los horarios de disponibilidad de cada médico.
+Por ejemplo:
+
+       Médico Día          Hora inicial Hora final
+
+       Médico A Lunes      08:00         12:00
+
+       Médico A Miércoles 14:00          18:00
+
+       Médico B Martes     09:00         13:00
+
+El sistema deberá permitir definir la duración de cada cita, por ejemplo, 30
+minutos, y calcular los horarios disponibles.
+Reglas:
+     La hora final deberá ser posterior a la hora inicial.
+     No se permitirán horarios inválidos.
+     No se ofrecerán citas fuera del horario de atención.
+     No se ofrecerán citas en fechas pasadas.
+     Las citas deberán respetar los intervalos configurados.
+     Las fechas de feriados o bloqueos podrán excluirse de la agenda si el
+      tiempo de desarrollo lo permite.
+
+
+
+
+                                         8
+Examen 2                              Sistemas 1          MSc.Ing. Angélica Gazón Cuéllar
+
+
+RF06. Registro de citas médicas
+Este será el módulo principal del proyecto.
+Para registrar una cita, la recepcionista deberá seleccionar:
+        El paciente.
+        La especialidad.
+        El médico.
+        La fecha de la cita.
+        La hora disponible.
+        Un motivo breve de la consulta, opcional.
+El sistema deberá generar un código único de cita y registrar la fecha de
+creación.
+Después de seleccionar al médico y la fecha, se mostrarán únicamente los
+horarios disponibles.
+
+
+Ejemplo de una cita
+Cita médica CM-0001 Programada
+Paciente       María López
+Especialidad Medicina general
+Médico          Dr. Juan Pérez
+Fecha          15/11/2026
+Horario        09:00–09:30
+Motivo         Consulta general
+Ejemplo ficticio para ilustrar el formato del registro.
+Al guardar la cita, el sistema deberá comprobar nuevamente la disponibilidad
+antes de confirmar el registro.
+RF07. Prevención de citas duplicadas
+El sistema deberá impedir que un médico tenga dos citas incompatibles en el
+mismo horario.
+Ejemplo:
+        El médico tiene una cita de 09:00 a 09:30.
+        Otro usuario intenta programar una cita para el mismo médico de 09:00 a
+         09:30.
+        El sistema rechaza la segunda operación y muestra un mensaje
+         explicativo.
+
+                                          9
+Examen 2                             Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+También deberá evitar que una cita exceda el horario de atención.
+Para un alcance básico, se pueden utilizar bloques fijos de 30 minutos. Si se
+permiten duraciones variables, el sistema deberá comprobar que los intervalos
+no se superpongan.
+La validación deberá realizarse en el servidor y, de ser posible, protegerse
+también mediante transacciones y restricciones de base de datos apropiadas.
+RF08. Reprogramación de citas
+La recepcionista podrá cambiar la fecha y hora de una cita programada.
+El sistema deberá:
+      Recuperar los datos de la cita.
+      Mostrar las nuevas fechas y horas disponibles.
+      Verificar que el médico pueda atender en el nuevo horario.
+      Evitar conflictos con otras citas.
+      Guardar la modificación.
+      Mantener la integridad de la información.
+Una cita atendida o cancelada no podrá reprogramarse directamente; se deberá
+aplicar una política definida por el sistema.
+RF09. Cancelación de citas
+El sistema permitirá cancelar citas programadas.
+Al cancelar, deberá registrar el estado de la cita y, preferiblemente, el motivo de
+cancelación.
+Reglas:
+      No se eliminará físicamente el registro de la cita.
+      Una cita cancelada dejará de ocupar el horario.
+      La cita permanecerá disponible para consultas históricas.
+      Una cita atendida no podrá cancelarse como si nunca hubiera ocurrido.
+RF10. Control de asistencia
+
+
+
+
+                                            10
+Examen 2                              Sistemas 1       MSc.Ing. Angélica Gazón Cuéllar
+
+
+El sistema manejará los siguientes estados:
+
+       Estado         Significado
+
+       Programada La cita está reservada
+
+       Confirmada Se ha confirmado la asistencia
+
+       Atendida       La consulta se realizó
+
+       Cancelada La cita fue cancelada
+
+       Inasistencia El paciente no se presentó
+
+Los estudiantes deberán implementar las transiciones de estado y controlar qué
+acciones son válidas en cada situación.
+Por ejemplo, una cita cancelada no podrá marcarse como atendida sin un
+procedimiento autorizado.
+RF11. Consulta de agenda médica
+El sistema deberá permitir consultar la agenda de un médico para una fecha
+específica.
+La información mostrada incluirá:
+     Hora de la cita.
+     Código de cita.
+     Nombre del paciente.
+     Especialidad.
+     Estado.
+     Motivo breve, si corresponde y si el usuario tiene permiso para verlo.
+También deberá permitir filtrar por médico, fecha y estado.
+RF12. Historial de citas por paciente
+Al consultar un paciente, se podrá visualizar el historial de sus citas, incluyendo:
+     Fecha y hora.
+     Médico asignado.
+     Especialidad.
+     Estado de la cita.
+
+
+                                         11
+Examen 2                             Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+     Fecha de registro.
+El historial deberá incluir citas pasadas y canceladas sin perder la trazabilidad.
+RF13. Reportes
+El sistema deberá generar, como mínimo, los siguientes reportes:
+   Citas programadas para una fecha.
+   Citas por médico.
+   Citas por especialidad.
+   Citas por estado.
+   Pacientes registrados.
+   1. Cantidad de citas atendidas, canceladas e inasistencias dentro de un
+      período.
+   2. Agenda diaria de cada médico.
+   3. Los reportes deberán permitir filtrar por fecha o rango de fechas y mostrar
+      totales cuando corresponda.
+   4. Como mejora opcional, se podrá exportar un reporte a CSV o PDF.
+   5. Reglas del negocio
+   6. Estas reglas deberán aplicarse independientemente de lo que el usuario
+      escriba en los formularios.
+     RN01. Cada paciente tendrá un identificador único.
+     RN02. Cada médico tendrá un identificador único.
+     RN03. Una cita deberá estar asociada a un paciente y a un médico válidos.
+     RN04. El médico deberá estar activo para recibir nuevas citas.
+     RN05. La cita deberá pertenecer al horario de atención del médico.
+     RN06. No se podrán registrar citas en fechas pasadas.
+     RN07. Un médico no podrá tener citas superpuestas.
+     RN08. La duración de la cita deberá respetar la configuración del sistema.
+     RN09. Las citas canceladas no ocuparán disponibilidad.
+     RN10. Las citas atendidas conservarán su registro histórico.
+     RN11. No se eliminarán pacientes o médicos que tengan citas históricas
+      asociadas; se desactivarán.
+     RN12. Solo los usuarios autorizados podrán realizar cada operación.
+     RN13. Las operaciones de programación y reprogramación deberán
+      verificar la disponibilidad en el servidor.
+
+
+                                        12
+Examen 2                            Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+     RN14. Los datos se almacenarán de forma persistente en PostgreSQL.
+6. Diseño preliminar de la base de datos
+Los estudiantes deberán diseñar un diagrama de clases y posteriormente
+implementarlo en PostgreSQL.
+Las relaciones principales serán:
+     Un paciente puede tener muchas citas.
+     Un médico puede atender muchas citas.
+     Un médico puede tener una o varias especialidades.
+     Una especialidad puede estar asociada a varios médicos.
+     Un médico puede tener varios horarios de atención.
+     Un usuario inicia sesión y accede a las operaciones permitidas por su rol.
+
+
+7. Requerimientos técnicos
+El sistema deberá cumplir las siguientes condiciones técnicas:
+     Backend: PHP.
+     Base de datos: PostgreSQL.
+     Conexión: PDO con el controlador PostgreSQL pdo_pgsql, o una
+      alternativa aprobada por el docente.
+     Frontend: HTML5 y CSS3.
+     JavaScript: opcional para validaciones de interfaz y mejoras de usabilidad.
+     Servidor local: Apache mediante XAMPP compatible con la configuración
+      elegida, o un entorno PHP equivalente.
+     Consultas SQL parametrizadas para evitar inyección SQL.
+     Validación de los datos tanto en el cliente como en el servidor.
+     Uso de sesiones para controlar el acceso.
+     Manejo de errores sin mostrar credenciales ni detalles internos al usuario.
+     Base de datos normalizada, evitando duplicaciones innecesarias.
+     Separación razonable entre la interfaz, la lógica de negocio y el acceso a
+      datos.
+
+
+
+
+                                       13
+Examen 2                                Sistemas 1        MSc.Ing. Angélica Gazón Cuéllar
+
+
+8. Pruebas mínimas que deberán demostrar
+
+       N.º Prueba                                    Resultado esperado
+
+       1 Registrar un paciente nuevo                 El paciente queda guardado
+
+       2 Registrar un        paciente       con   CI El sistema rechaza el duplicado
+         duplicado
+
+       3 Programar una cita en horario La cita queda registrada
+         disponible
+
+       4 Programar otra cita superpuesta El sistema impide el conflicto
+         para el mismo médico
+
+       5 Intentar reservar fuera del horario El sistema rechaza la cita
+         médico
+
+       6 Cancelar una cita                           Cambia a estado cancelado y
+                                                     conserva el historial
+
+       7 Consultar el historial de un paciente Aparecen sus citas registradas
+
+       8 Buscar las citas de un médico por Se muestran                los   resultados
+         fecha                             correctos
+
+       9 Ingresar a una página interna sin El acceso es denegado
+         iniciar sesión
+
+       10 Intentar ejecutar una operación con El servidor valida y rechaza la
+          datos inválidos                     operación
+
+
+
+El sistema deberá:
+      Tener diseño profesional
+      Usar validaciones JavaScript y PHP
+      Manejar errores correctamente
+      Tener comentarios en el código
+      Aplicar buenas prác cas de programación
+
+
+                                            14
+Examen 2                                 Sistemas 1      MSc.Ing. Angélica Gazón Cuéllar
+
+
+DOCUMENTACION
+CARATULA: TITULO DE LA APP WEB, # GRUPO, INTEGRANTES,……….
+TABLA DE CONTENIDO (INDICE ACTUALIZADO EN CADA PRESENTACION)
+1) PERFIL
+1.1 INTRODUCCION
+1.2 OBJETITIVOS
+   Obje vo General
+   Obje vo Especiﬁco
+1.3 DESCRIPCION DEL PROBLEMA
+1.4 ALCANCE
+2) MARCO TEORICO
+3) MODELO DE NEGOCIO
+4) FT CAPTURA DE REQUISITOS
+5) FT. ANALISIS
+6) FT. DISEÑO
+  6.1) Diseño de Arquitectura (Física y Lógica)
+  6.2) Diseñar Caso de Uso (Diagrama de Secuencia)
+  6.2) Diseño de Datos (Lógico y sico)
+7) FT. IMPLEMENTACION
+  7.1) Herramientas de desarrollo de la aplicación WEB
+  7.2) Implementación de la Arquitectura del Sistema
+  7.3) Implementación de la Arquitectura del Subsistemas
+8) FT. PRUEBAS
+CONCLUSION
+RECOMENDACIÓN
+BIBLIOGRAFIA
+Código fuente organizado y comentado publicado Github y entregar URL + Código QR
+para acceder a su repositorio
+ANEXOS
+
+
+
+                                            15
+Examen 2                    Sistemas 1    MSc.Ing. Angélica Gazón Cuéllar
+
+
+SISTEMAS 1 SA
+SEGUNDO EXAMEN PARCIAL DEFENSA: MARTES 1O DE NOVIEMBRE
+ENVIAR DOCUMENTO PUDS-UML A LA PLATAFORMA
+(FT:CAPTURA DE REQUISITOS, ANALISIS, DISEÑO,IMPLEMENTACION Y
+PRUEBAS)
+PRESENTACION 1 DOMINGO 25/10/2026 23:59 (Avance >=50% Ciclo #1)
+PRESENTACION 2 DOMINGO 08/11/2026 23:59 (Completo 100% Ciclo #2)
+(LAS 2 PRESENTACIONS SON OBLIGATORIAS)
+
+
+
+
+                               16
+
