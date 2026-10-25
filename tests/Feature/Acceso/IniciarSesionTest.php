@@ -39,6 +39,16 @@ class IniciarSesionTest extends TestCase
         $this->get('/menu')->assertOk()->assertSee('Bienvenido, admin');
     }
 
+    public function test_la_sesion_se_mantiene_en_las_peticiones_siguientes(): void
+    {
+        $this->post('/login', ['login' => 'admin', 'clave' => self::CLAVE]);
+
+        // como en una petición nueva del navegador: el usuario se vuelve a cargar desde la sesión
+        $this->app['auth']->forgetGuards();
+
+        $this->get('/menu')->assertOk()->assertSee('Bienvenido, admin');
+    }
+
     public function test_ingreso_con_correo_y_sin_distinguir_mayusculas(): void
     {
         $this->post('/login', ['login' => '  RECEP1@vidasalud.com ', 'clave' => self::CLAVE])->assertRedirect('/menu');
