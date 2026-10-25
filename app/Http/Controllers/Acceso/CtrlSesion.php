@@ -70,8 +70,10 @@ class CtrlSesion extends Controller
         // Paso 7: reinicia los intentos, regenera la sesión y guarda el usuario con su rol
         $usuario->reiniciarIntentos();
         $usuario->forceFill(['ultimo_acceso' => now()])->save();
+        $rol = Rol::obtener($usuario->rol_id);
         Auth::login($usuario);
         $request->session()->regenerate();
+        $request->session()->put('rol', $rol->nombre);
 
         // Paso 8: acceso en la bitácora
         ServicioBitacora::registrar(ServicioBitacora::ACCESO, 'LOGIN', 'Acceso', $usuario->id, 'Inicio de sesión correcto');
@@ -82,7 +84,7 @@ class CtrlSesion extends Controller
                 ->with('aviso', 'Su contraseña es temporal. Debe cambiarla antes de continuar.');
         }
 
-        return redirect()->route($usuario->rol->nombre === Rol::PACIENTE ? 'portal' : 'menu');
+        return redirect()->route($rol->nombre === Rol::PACIENTE ? 'portal' : 'menu');
     }
 
     /**

@@ -13,6 +13,18 @@ Registro de decisiones en las que la implementación agrega algo que `docs/casos
 - **Documento:** paso 9, «redirige al menú, o al portal si es paciente». El documento no nombra la vista del portal.
 - **Implementación:** vista `portal.blade.php` (aprobada por la autora), publicada con `Route::view` (B1) y solo para el rol Paciente.
 
+## Revisión del paso 3 (Acceso)
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU01 | Se usaba la relación `$usuario->rol` y el rol no se guardaba en la sesión. | El documento lista `M.Rol::obtener()` y el paso 7 dice «guarda el usuario y su rol». | **Corregido:** `CtrlSesion@autenticar` llama a `Rol::obtener()` y guarda `rol` en la sesión. |
+| CU26 | `CtrlClave@update` también usa `Usuario::registrarIntentoFallido()` y `reiniciarIntentos()`, que la tabla de clases de CU26 no lista. | La excepción «suma un intento fallido (RNF04)» y B9 (5 fallos bloquean y cierran la sesión) lo exigen. Son métodos que ya están en el documento (CU01). | Aplicado; sin métodos nuevos. |
+| CU27 | `CtrlRecuperacion@restablecer` usa `Usuario::reiniciarIntentos()`, que la tabla de clases de CU27 no lista. | El paso 8 exige «desbloquea la cuenta». El método ya está en el documento (CU01). | Aplicado; sin métodos nuevos. |
+| CU27 | La excepción «usuario sin correo registrado» no puede ocurrir. | `usuario.correo` es `NOT NULL` en `01_esquema.sql`. | Sin cambios; la cubre el administrador con CU03 si hiciera falta. |
+| CU27 | El correo se envía con `Mail::raw()`, sin clase Mailable. | Así no se crea una clase con un nombre que no está en el documento. En desarrollo el correo queda en `storage/logs/laravel.log` (mailer `log`). | Aplicado. |
+| CU01, CU26, CU27 | Los Form Requests usan `prepareForValidation()` para recortar los espacios del usuario o correo. | Es un método propio de Laravel (paso 5 de CU01: «sanea los datos»). | Aplicado. |
+| Todos | El código y las pruebas del paso 3 no agregan métodos con nombre propio a los controladores ni a los modelos. | Regla 1 y B13. | Verificado. |
+
 ## Nombres que no están en el documento (aprobados por la autora)
 
 | Elemento | Nombre | Motivo |
@@ -24,7 +36,7 @@ Registro de decisiones en las que la implementación agrega algo que `docs/casos
 | Middlewares | `VerificarRol`, `VerificarClaveTemporal`, `SinCache` | RNF03, RN23 y CU02 (botón «Atrás»). |
 | Servicio | `ServicioBitacora` | Decisión B8 de `CLAUDE.md`. |
 | Política RNF05 | `Password::defaults()` de Laravel | Sin clase con nombre nuevo. |
-| Opciones del menú por rol | `config/menu.php` | Una sola lista para la barra, `V.menu` y el portal. |
+| Opciones del menú por rol | `config/menu.php` | Una sola lista para la barra, `V.menu` y el portal. **Pendiente de aprobación** (lo elegí al implementar). |
 
 ## Modelos (paso 2)
 

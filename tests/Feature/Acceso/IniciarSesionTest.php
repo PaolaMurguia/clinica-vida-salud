@@ -33,6 +33,7 @@ class IniciarSesionTest extends TestCase
 
         $this->assertAuthenticatedAs(Usuario::buscarPorLogin('admin'));
         $this->assertNotSame($sesionAnterior, session()->getId());
+        $this->assertSame('Administrador', session('rol'));
         $this->assertNotNull(Usuario::buscarPorLogin('admin')->ultimo_acceso);
         $this->assertDatabaseHas('bitacora', ['accion' => 'LOGIN', 'usuario_id' => Usuario::buscarPorLogin('admin')->id]);
 
