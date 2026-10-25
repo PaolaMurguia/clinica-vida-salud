@@ -7,10 +7,10 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Población inicial de la base de datos (se completa en el paso 2).
+     * Población inicial de la base de datos.
      */
     public function run(): void
     {
-        //
+        $this->call(PoblacionSeeder::class);
     }
 }
