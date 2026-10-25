@@ -1,0 +1,8 @@
+@import 'variables';
+@import 'bootstrap/scss/bootstrap';
+
+// Ajustes propios del sistema
+.navbar-brand { font-weight: 600; letter-spacing: .02em; }
+main { min-height: calc(100vh - 140px); }
+.card-modulo { transition: transform .15s ease; }
+.card-modulo:hover { transform: translateY(-2px); }
