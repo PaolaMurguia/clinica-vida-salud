@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use Illuminate\Support\Facades\Route;
 
@@ -30,13 +31,18 @@ Route::middleware('guest')->group(function () {
 });
 
 // --- Con sesión (también con contraseña temporal) ---
-Route::middleware(['auth', 'sin.cache'])->group(function () {
+// auth.session cierra las sesiones cuyo hash de contraseña ya no coincide (CU26, CU27)
+Route::middleware(['auth', 'auth.session', 'sin.cache'])->group(function () {
     // CU02 – Cerrar sesión: UI_Menu.salir() → CtrlSesion@cerrarSesion
     Route::post('/logout', [CtrlSesion::class, 'cerrarSesion'])->name('logout');
+
+    // CU26 – Cambiar contraseña: UI_CambiarClave (V.cambiarClave) → CtrlClave@update
+    Route::view('/cambiar-clave', 'cambiarClave')->name('clave.edit');
+    Route::put('/cambiar-clave', [CtrlClave::class, 'update'])->name('clave.update');
 });
 
 // --- Con sesión y contraseña definitiva ---
-Route::middleware(['auth', 'sin.cache', 'clave.temporal'])->group(function () {
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal'])->group(function () {
     // CU01, paso 9: menú principal (B1) para el personal y portal para el paciente
     Route::view('/menu', 'menu')->middleware('rol:Administrador,Recepcionista,Médico')->name('menu');
     Route::view('/portal', 'portal')->middleware('rol:Paciente')->name('portal');
