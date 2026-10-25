@@ -3,7 +3,7 @@
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementación. Se actualiza en cada commit.
 
 **Estado:** ✅ implementado y probado · 🟡 parcial · ⬜ pendiente
-**Último paso cerrado:** Paso 2 – Base de datos y modelos. **En curso:** Paso 3 – Acceso (CU01, CU02 y CU26 listos).
+**Último paso cerrado:** Paso 3 – Acceso (CU01, CU02, CU26 y CU27).
 
 ## Resumen por caso de uso
 
@@ -23,7 +23,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | CU12 | Registrar seguro del paciente | Pacientes | `seguro` | `CtrlSeguros` → index(), store(), destroy() | `Paciente` → obtener() ✅ · `Seguro` → obtenerActivo(), darDeBaja(), crear() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU13 | Consultar disponibilidad | Disponibilidad | `disponibilidad` | `CtrlDisponibilidad` → especialidades(), medicos(), franjas() | `Paciente` → obtener() ✅ · `Especialidad` → listarPorEdad() ✅ · `Medico` → listarPorEspecialidad() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `Cita` → listarOcupadas() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU26 | Cambiar contraseña | Acceso | `cambiarClave` | `Acceso\CtrlClave` → update() ✅ | `Usuario` → verificarClave(), actualizarClave() ✅ · `Bitacora` → registrar() ✅ | `GET /cambiar-clave` (`clave.edit`), `PUT /cambiar-clave` (`clave.update`) | `Acceso/CambiarClaveTest` | ✅ |
-| CU27 | Recuperar contraseña | Acceso | `recuperarClave` | `CtrlRecuperacion` → solicitarEnlace(), restablecer() | `Usuario` → buscarPorLogin(), actualizarClave() ✅ · `Recuperacion` → contarRecientes(), crear(), validar(), marcarUsado() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
+| CU27 | Recuperar contraseña | Acceso | `recuperarClave` (solicitar, restablecer y aviso de enlace inválido) | `Acceso\CtrlRecuperacion` → solicitarEnlace(), restablecer() ✅ | `Usuario` → buscarPorLogin(), actualizarClave(), reiniciarIntentos() ✅ · `Recuperacion` → contarRecientes(), crear(), validar() (al abrir y al enviar), marcarUsado() ✅ · `Bitacora` → registrar() ✅ | `GET /recuperar-clave` (`recuperacion.solicitar`), `POST /recuperar-clave` (`recuperacion.enlace`), `GET /recuperar-clave/{token}` (`recuperacion.form`, valida el enlace), `POST /restablecer-clave` (`recuperacion.restablecer`) | `Acceso/RecuperarClaveTest` | ✅ |
 
 ## Base común (pasos 1 y 2)
 

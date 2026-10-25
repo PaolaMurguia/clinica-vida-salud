@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Acceso\CtrlClave;
+use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
+use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +30,22 @@ Route::middleware('guest')->group(function () {
     // CU01 – Iniciar sesión: UI_Login (V.login) → CtrlSesion@autenticar
     Route::view('/login', 'login')->name('login');
     Route::post('/login', [CtrlSesion::class, 'autenticar'])->name('login.autenticar');
+
+    // CU27 – Recuperar contraseña: UI_RecuperarClave (V.recuperarClave)
+    // solicitar() → CtrlRecuperacion@solicitarEnlace
+    Route::view('/recuperar-clave', 'recuperarClave')->name('recuperacion.solicitar');
+    Route::post('/recuperar-clave', [CtrlRecuperacion::class, 'solicitarEnlace'])->name('recuperacion.enlace');
+    // Paso 6: al abrir el enlace se valida con Recuperacion::validar(), sin métodos nuevos en el controlador
+    Route::get('/recuperar-clave/{token}', function (string $token) {
+        $solicitud = Recuperacion::validar($token);
+
+        return view('recuperarClave', [
+            'token'        => $token,
+            'enlaceValido' => $solicitud !== null && $solicitud->usuario->estado,
+        ]);
+    })->name('recuperacion.form');
+    // restablecer() → CtrlRecuperacion@restablecer (vuelve a validar el enlace)
+    Route::post('/restablecer-clave', [CtrlRecuperacion::class, 'restablecer'])->name('recuperacion.restablecer');
 });
 
 // --- Con sesión (también con contraseña temporal) ---
