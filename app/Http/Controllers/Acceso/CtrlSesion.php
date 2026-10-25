@@ -8,10 +8,11 @@ use App\Models\Rol;
 use App\Models\Usuario;
 use App\Services\ServicioBitacora;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Control CtrlSesion: CU01 – Iniciar sesión.
+ * Control CtrlSesion: CU01 – Iniciar sesión y CU02 – Cerrar sesión.
  */
 class CtrlSesion extends Controller
 {
@@ -82,5 +83,24 @@ class CtrlSesion extends Controller
         }
 
         return redirect()->route($usuario->rol->nombre === Rol::PACIENTE ? 'portal' : 'menu');
+    }
+
+    /**
+     * CU02 – Cerrar sesión: registra el cierre, invalida la sesión, regenera el token CSRF
+     * y muestra el inicio de sesión. Con la sesión ya expirada, el middleware auth lleva
+     * directamente al inicio de sesión.
+     */
+    public function cerrarSesion(Request $request): RedirectResponse
+    {
+        // Paso 2: cierre en la bitácora, antes de perder el usuario de la sesión
+        ServicioBitacora::registrar(ServicioBitacora::ACCESO, 'LOGOUT', 'Acceso', $request->user()->id, 'Cierre de sesión');
+
+        // Paso 3: invalida la sesión y regenera el token CSRF
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Paso 4: página de inicio de sesión
+        return redirect()->route('login')->with('exito', 'Sesión cerrada correctamente.');
     }
 }

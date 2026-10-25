@@ -29,6 +29,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [CtrlSesion::class, 'autenticar'])->name('login.autenticar');
 });
 
+// --- Con sesión (también con contraseña temporal) ---
+Route::middleware(['auth', 'sin.cache'])->group(function () {
+    // CU02 – Cerrar sesión: UI_Menu.salir() → CtrlSesion@cerrarSesion
+    Route::post('/logout', [CtrlSesion::class, 'cerrarSesion'])->name('logout');
+});
+
 // --- Con sesión y contraseña definitiva ---
 Route::middleware(['auth', 'sin.cache', 'clave.temporal'])->group(function () {
     // CU01, paso 9: menú principal (B1) para el personal y portal para el paciente

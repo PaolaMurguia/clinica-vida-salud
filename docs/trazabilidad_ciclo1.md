@@ -3,14 +3,14 @@
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementación. Se actualiza en cada commit.
 
 **Estado:** ✅ implementado y probado · 🟡 parcial · ⬜ pendiente
-**Último paso cerrado:** Paso 2 – Base de datos y modelos. **En curso:** Paso 3 – Acceso (CU01 listo).
+**Último paso cerrado:** Paso 2 – Base de datos y modelos. **En curso:** Paso 3 – Acceso (CU01 y CU02 listos).
 
 ## Resumen por caso de uso
 
 | CU | Nombre | Módulo | Vista | Controlador → métodos | Modelos → métodos | Ruta | Test | Estado |
 |---|---|---|---|---|---|---|---|---|
 | CU01 | Iniciar sesión | Acceso | `login` (+ destino `menu` / `portal`) | `Acceso\CtrlSesion` → autenticar() ✅ | `Usuario` → buscarPorLogin(), reiniciarIntentos(), registrarIntentoFallido() ✅ · `Rol` → obtener() ✅ · `Bitacora` → registrar() ✅ | `GET /login` (`login`), `POST /login` (`login.autenticar`), `GET /menu`, `GET /portal` | `Acceso/IniciarSesionTest` | ✅ |
-| CU02 | Cerrar sesión | Acceso | `menu` | `CtrlSesion` → cerrarSesion() | `Bitacora` → registrar() ✅ | ⬜ | ⬜ | 🟡 modelos |
+| CU02 | Cerrar sesión | Acceso | `menu` (botón «Salir» = salir(); también en la plantilla y el portal) | `Acceso\CtrlSesion` → cerrarSesion() ✅ | `Bitacora` → registrar() ✅ | `POST /logout` (`logout`) | `Acceso/CerrarSesionTest` | ✅ |
 | CU03 | Gestionar usuarios y roles | Administracion | `usuarios` | `CtrlUsuarios` → index(), store(), update(), restablecerClave(), cambiarEstado() | `Usuario` → listar(), crear(), actualizar(), marcarTemporal(), actualizarEstado() ✅ · `Rol` → obtener() ✅ · `Medico` → obtener() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU04 | Consultar bitácora | Administracion | `bitacora` | `CtrlBitacora` → index(), filtrar(), exportar() | `Bitacora` → listar(), buscar() ✅ · `Usuario` → obtener() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU05 | Gestionar especialidades | Administracion | `especialidades` | `CtrlEspecialidades` → index(), store(), update(), cambiarEstado() | `Especialidad` → listar(), existeNombre(), crear(), actualizar(), cambiarEstado() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
@@ -42,7 +42,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | Opciones del menú por rol | `config/menu.php` | plantilla, `menu`, `portal` | `IniciarSesionTest` |
 | Roles autorizados (RNF03, RN12) | `app/Http/Middleware/VerificarRol.php` (`rol:`) | rutas internas | `IniciarSesionTest::test_paciente_va_al_portal_con_su_ci` |
 | Contraseña temporal (RN23) | `app/Http/Middleware/VerificarClaveTemporal.php` (`clave.temporal`) | rutas internas | CU26 |
-| Sin caché (CU02) | `app/Http/Middleware/SinCache.php` (`sin.cache`) | rutas internas | CU02 |
+| Sin caché (CU02) | `app/Http/Middleware/SinCache.php` (`sin.cache`) | rutas internas | `CerrarSesionTest::test_paginas_internas_no_se_guardan_en_cache` |
 | Bitácora centralizada (B8) | `app/Services/ServicioBitacora.php` → `Bitacora::registrar()` | todos los CU | `IniciarSesionTest` |
 | Política RNF05 | `Password::defaults()` en `app/Providers/AppServiceProvider.php` | CU03, CU10, CU26, CU27 | CU26, CU27 |
 | Validación en el navegador (RNF07) | `resources/js/validaciones.js` (`data-validar`, `data-coincide`) | formularios | manual |
