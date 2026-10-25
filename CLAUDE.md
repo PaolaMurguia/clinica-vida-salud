@@ -9,6 +9,18 @@ Sistema Web de Gestión de Citas Médicas para la Clínica Vida Salud (Examen Pa
 
 ---
 
+## Reglas de trabajo (obligatorias)
+1. **Nombres idénticos al documento**: los nombres de CU, vistas, controladores, modelos y métodos son exactamente los de `docs/casos_de_uso_ciclo1.md`. No se renombra nada. Si un nombre no está en el documento, se pregunta antes de crearlo.
+2. **Organización por módulos**: `Acceso`, `Administracion`, `Pacientes` y `Disponibilidad` como subcarpetas de `app/Http/Controllers`, `app/Http/Requests` y `tests/Feature`. Las vistas quedan planas en `resources/views/` (sin subcarpetas).
+3. **Comentarios con el CU**: cada controlador y cada método público lleva un comentario con el código del CU (por ejemplo, `CU01 – Iniciar sesión`).
+4. **Rutas**: agrupadas por módulo en `routes/web.php` y comentadas.
+5. **Trazabilidad**: `docs/trazabilidad_ciclo1.md` (CU → vista → controlador → métodos → modelos → ruta → test) se actualiza en cada commit.
+6. **Commits**: uno por CU o por paso, con el código del CU (o el paso) en el mensaje.
+7. **Pruebas aisladas**: `phpunit.xml` usa `clinica_vida_salud_test`; `php artisan test` nunca toca `clinica_vida_salud` (además, `tests/TestCase.php` detiene las pruebas si la conexión apunta a otra base).
+8. **Revisión al cerrar cada paso**: comparar lo creado contra `docs/casos_de_uso_ciclo1.md` e informar cualquier diferencia antes de seguir.
+
+---
+
 ## Decisiones de Diseño y Reglas del Negocio (Ciclo 1)
 
 ### A. Resoluciones a Contradicciones
