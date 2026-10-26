@@ -137,13 +137,16 @@ class Usuario extends Authenticatable
         return self::with(['rol', 'medico'])->orderBy('nombre_usuario')->get();
     }
 
-    /** CU03, CU10: crea la cuenta guardando solo el hash de la contraseña (RNF01). */
+    /**
+     * CU03, CU10: crea la cuenta guardando solo el hash de la contraseña (RNF01) y recupera
+     * los valores por defecto de la base de datos (estado, debe_cambiar_clave, fechas).
+     */
     public static function crear(array $datos): self
     {
         $datos['password_hash'] = Hash::make($datos['clave']);
         unset($datos['clave']);
 
-        return self::create($datos);
+        return self::create($datos)->refresh();
     }
 
     /** CU03: actualiza los datos de la cuenta (no la contraseña). */

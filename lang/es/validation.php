@@ -103,5 +103,7 @@ return [
         'contacto_emerg_nombre'    => 'el nombre del contacto de emergencia',
         'contacto_emerg_parent'    => 'el parentesco del contacto de emergencia',
         'contacto_emerg_tel'       => 'el teléfono del contacto de emergencia',
+        // CU10
+        'acepta_privacidad'        => 'la política de privacidad',
     ],
 ];

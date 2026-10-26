@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
+use App\Http\Controllers\Pacientes\CtrlRegistro;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
@@ -111,6 +112,13 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
 // =====================================================================
 // Módulo Pacientes: CU08, CU09, CU10, CU11, CU12
 // =====================================================================
+
+// --- Sin sesión ---
+Route::middleware('guest')->group(function () {
+    // CU10 – Registrarse como paciente: UI_Registro (V.registro) → CtrlRegistro@registrar
+    Route::view('/registro', 'registro')->name('registro');
+    Route::post('/registro', [CtrlRegistro::class, 'registrar'])->name('registro.registrar');
+});
 
 // --- Recepcionista y Administrador (A1: el administrador tiene el CRUD completo) ---
 Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Administrador'])->group(function () {
