@@ -110,5 +110,12 @@ return [
         'notif_alerta'             => 'la preferencia de alertas',
         'tipo_sangre'              => 'el tipo de sangre',
         'tipo'                     => 'el tipo de antecedente',
+        // CU12
+        'aseguradora'              => 'la aseguradora',
+        'nro_poliza'               => 'el número de póliza',
+        'tipo_cobertura'           => 'el tipo de cobertura',
+        'porcentaje_cobertura'     => 'el porcentaje de cobertura',
+        'fecha_inicio'             => 'la fecha de inicio',
+        'fecha_fin'                => 'la fecha de fin',
     ],
 ];

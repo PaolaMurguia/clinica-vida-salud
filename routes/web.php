@@ -11,6 +11,7 @@ use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
+use App\Http\Controllers\Pacientes\CtrlSeguros;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
@@ -132,6 +133,16 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // CU09 – Buscar paciente: UI_BuscarPaciente (V.buscarPaciente) → CtrlPacientes@buscar y @show
     Route::get('/pacientes/buscar', [CtrlPacientes::class, 'buscar'])->name('pacientes.buscar');
     Route::get('/pacientes/{paciente}', [CtrlPacientes::class, 'show'])->whereNumber('paciente')->name('pacientes.show');
+});
+
+// --- Solo Recepcionista ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista'])->group(function () {
+    // CU12 – Registrar seguro del paciente: UI_Seguro (V.seguro) → CtrlSeguros
+    Route::get('/pacientes/{paciente}/seguro', [CtrlSeguros::class, 'index'])->whereNumber('paciente')->name('seguros.index');
+    Route::post('/pacientes/{paciente}/seguro', [CtrlSeguros::class, 'store'])->whereNumber('paciente')->name('seguros.store');
+    // scopeBindings: el seguro debe pertenecer al paciente de la ruta
+    Route::delete('/pacientes/{paciente}/seguro/{seguro}', [CtrlSeguros::class, 'destroy'])
+        ->whereNumber(['paciente', 'seguro'])->scopeBindings()->name('seguros.destroy');
 });
 
 // --- Paciente (solo su propia información, RN18) ---
