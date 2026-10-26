@@ -25,6 +25,29 @@ Registro de decisiones en las que la implementación agrega algo que `docs/casos
 | CU01, CU26, CU27 | Los Form Requests usan `prepareForValidation()` para recortar los espacios del usuario o correo. | Es un método propio de Laravel (paso 5 de CU01: «sanea los datos»). | Aplicado. |
 | Todos | El código y las pruebas del paso 3 no agregan métodos con nombre propio a los controladores ni a los modelos. | Regla 1 y B13. | Verificado. |
 
+## Revisión del paso 4 (Administración)
+
+Los controladores tienen exactamente los métodos del documento: `CtrlUsuarios` (index, store, update, restablecerClave, cambiarEstado), `CtrlBitacora` (index, filtrar, exportar), `CtrlEspecialidades` (index, store, update, cambiarEstado), `CtrlMedicos` (index, store, update, cambiarEstado, buscar) y `CtrlHorarios` (index, store, cambiarEstado). Las vistas son `usuarios`, `bitacora`, `especialidades`, `medicos`, `horarios` y `formHorario`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU03–CU07 | Nombres de Form Requests con la entidad: `StoreUsuarioRequest`, `UpdateMedicoRequest`, `BuscarMedicoRequest`, etc. Un `CambiarEstadoRequest` compartido (CU05, CU06, CU07) y `CambiarEstadoUsuarioRequest` (CU03, que suma «desbloquear»). | La convención aprobada era `<método>Request`, pero en el módulo hay varios `store`/`update`; se agrega la entidad, como ya se hizo con `UpdateClaveRequest`. | **Pendiente de aprobación.** |
+| CU03–CU07 | Las reglas que no son de formato están en `after()` del Form Request: usuario o correo duplicado (`Usuario::buscarPorLogin`), único administrador, nombre normalizado (`Especialidad::existeNombre`), CI (`Medico::existeCI`), franjas completas y superposición (`Horario::seSuperpone`). | A6 y B13: sin métodos nuevos en los controladores; se usan los métodos del documento. | Aplicado. |
+| CU03, CU05, CU06 | Editar se hace con `index()` y `?editar={id}`, que carga el registro en el formulario integrado. | B1: formularios integrados en `index()` sin métodos inventados. | Aplicado. |
+| CU03 | `Usuario::obtener()` (para editar) y `Medico::listar()` (selector del médico vinculado) no figuran en la tabla de clases de CU03. | Son métodos del documento (CU04 y CU06). | Aplicado; sin métodos nuevos. |
+| CU03 | Al desactivar una cuenta con una sesión abierta, esa sesión sigue activa hasta que expire o se cierre. | El documento no lo pide. Se puede cerrar al instante con un control en el middleware si se desea. | **Para decidir.** |
+| CU03 | `restablecerClave()` no tiene Form Request. | No recibe datos del formulario (solo el usuario de la ruta y el token CSRF). | Aplicado. |
+| CU03 | La contraseña temporal tiene 12 caracteres aleatorios y siempre cumple RNF05; se muestra una sola vez (mensaje flash). | CU03, paso 6. | Aplicado. |
+| CU04 | `Usuario::listar()` alimenta el filtro por usuario; no figura en la tabla de clases de CU04. | Método del documento (CU03). | Aplicado. |
+| CU04 | Si se indica «hasta», «desde» es obligatorio; si solo hay «desde», el rango de 90 días se cuenta hasta hoy. | B11 (máximo de 90 días) necesita las dos fechas. | Aplicado. |
+| CU04 | El CSV usa `;` como separador y BOM UTF-8, y la exportación queda en la bitácora (`EXPORTAR`). | Excel en español abre así el archivo con tildes. | Aplicado. |
+| CU05 | La edad máxima se compara con la mínima solo si hay mínima (por ejemplo «hasta 18 años»). | Igual que el CHECK `ck_especialidad_edades`. | Aplicado (error encontrado y corregido con una prueba). |
+| CU06 | Formato del CI: entre 5 y 12 dígitos con extensión opcional (`1234567-1B`). El buscador pide al menos 2 caracteres. | El documento no fija formatos; CU09 pide 3 caracteres para pacientes. | **Pendiente de aprobación.** |
+| CU06 | Al editar se conservan las especialidades ya asignadas aunque hoy estén inactivas; no se pueden agregar especialidades inactivas nuevas. | Evita que la sincronización (B5) quite una especialidad solo por estar inactiva. | Aplicado. |
+| CU07 | `formHorario` se incluye dentro de `horarios`, y las franjas del horario recién guardado se muestran en un aviso. Cada horario de la lista muestra también sus franjas. | V.horarios y V.formHorario del documento; paso 4. | Aplicado. |
+| CU07 | Reactivar un horario (B6) solo se permite si no se superpone con otro activo. | Lo exige la restricción EXCLUDE `ex_horario_no_solapado`. | Aplicado. |
+| CU03–CU07 | Desactivar un médico con citas futuras no muestra advertencias. | B4: se aplazó al ciclo 2. | Sin cambios. |
+
 ## Nombres que no están en el documento (aprobados por la autora)
 
 | Elemento | Nombre | Motivo |
