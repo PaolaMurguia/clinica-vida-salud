@@ -114,6 +114,46 @@ class GestionarPacientesTest extends TestCase
         $this->assertDatabaseHas('bitacora', ['accion' => 'DESACTIVAR', 'modulo' => 'Pacientes', 'registro_id' => $maria->id]);
     }
 
+    public function test_reactiva_un_paciente_desactivado_y_lo_registra(): void
+    {
+        $maria = Paciente::buscarPorCI('1234567');
+        $maria->desactivar();
+        $this->get('/pacientes')->assertSee('Reactivar');
+
+        $this->patch("/pacientes/{$maria->id}/estado", ['accion' => 'activar'])
+            ->assertRedirect('/pacientes')->assertSessionHas('exito', 'Paciente P-0001 reactivado.');
+
+        $this->assertTrue($maria->fresh()->estado);
+        $this->assertDatabaseHas('bitacora', ['accion' => 'ACTIVAR', 'modulo' => 'Pacientes', 'registro_id' => $maria->id]);
+
+        // la desactivación sigue siendo destroy()
+        $this->patch("/pacientes/{$maria->id}/estado", ['accion' => 'desactivar'])->assertSessionHasErrors('accion');
+        $this->assertTrue($maria->fresh()->estado);
+    }
+
+    public function test_recepcionista_y_administrador_corrigen_el_tipo_de_sangre(): void
+    {
+        $maria = Paciente::buscarPorCI('1234567');   // O+ en la población
+        $datosMaria = $this->datos(['ci' => '1234567', 'nombres' => 'María', 'apellidos' => 'López Vargas', 'fecha_nacimiento' => '1990-05-14']);
+
+        $this->get("/pacientes?editar={$maria->id}")->assertSee('<option value="O+" selected', false);
+        $this->put("/pacientes/{$maria->id}", $datosMaria + ['tipo_sangre' => 'A+'])->assertSessionHasNoErrors();
+        $this->assertSame('A+', $maria->historia()->first()->tipo_sangre);
+        $this->assertDatabaseHas('bitacora', ['accion' => 'MODIFICAR', 'registro_id' => $maria->id, 'descripcion' => 'Modificación del paciente P-0001; tipo de sangre: O+ → A+']);
+
+        $this->flushSession()->actingAs(Usuario::buscarPorLogin('admin'));
+        $this->put("/pacientes/{$maria->id}", $datosMaria + ['tipo_sangre' => 'AB-'])->assertSessionHasNoErrors();
+        $this->assertSame('AB-', $maria->historia()->first()->tipo_sangre);
+
+        $this->put("/pacientes/{$maria->id}", $datosMaria + ['tipo_sangre' => 'Z+'])->assertSessionHasErrors('tipo_sangre');
+    }
+
+    public function test_tipo_de_sangre_al_registrar_crea_la_historia(): void
+    {
+        $this->post('/pacientes', $this->datos(['tipo_sangre' => 'B-']))->assertSessionHasNoErrors();
+        $this->assertSame('B-', Paciente::buscarPorCI('6543210')->historia()->first()->tipo_sangre);
+    }
+
     public function test_pagina_interna_sin_sesion(): void
     {
         $this->flushSession();

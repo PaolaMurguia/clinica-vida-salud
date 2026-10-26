@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Pacientes;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pacientes\BuscarPacienteRequest;
+use App\Http\Requests\Pacientes\CambiarEstadoPacienteRequest;
 use App\Http\Requests\Pacientes\StorePacienteRequest;
 use App\Http\Requests\Pacientes\UpdatePacienteRequest;
+use App\Models\Historia;
 use App\Models\Paciente;
 use App\Services\ServicioBitacora;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -35,7 +39,16 @@ class CtrlPacientes extends Controller
      */
     public function store(StorePacienteRequest $request): RedirectResponse
     {
-        $paciente = Paciente::crear($request->validated());
+        $datos = $request->validated();
+
+        $paciente = DB::transaction(function () use ($datos) {
+            $paciente = Paciente::crear(Arr::except($datos, 'tipo_sangre'));
+            // tipo de sangre en la historia clínica, que se crea si no existe (B7)
+            if (! empty($datos['tipo_sangre'])) {
+                Historia::obtener($paciente->id)->update(['tipo_sangre' => $datos['tipo_sangre'], 'fecha_actualizacion' => now()]);
+            }
+            return $paciente;
+        });
 
         ServicioBitacora::registrar(ServicioBitacora::ACCION, 'CREAR', 'Pacientes', $paciente->id,
             "Registro del paciente {$paciente->codigo} (CI {$paciente->ci})");
@@ -44,14 +57,27 @@ class CtrlPacientes extends Controller
     }
 
     /**
-     * CU08 – Gestionar pacientes (pasos 2 a 4 y 7): actualiza los datos del paciente.
+     * CU08 – Gestionar pacientes (pasos 2 a 4 y 7): actualiza los datos del paciente; la recepción
+     * también corrige aquí el tipo de sangre declarado por el paciente (CU11).
      */
     public function update(UpdatePacienteRequest $request, Paciente $paciente): RedirectResponse
     {
-        $paciente->actualizar($request->validated());
+        $datos = $request->validated();
+        $historia = Historia::obtener($paciente->id);
+        $tipoSangre = $datos['tipo_sangre'] ?? null;
+        $sangreAnterior = $historia->tipo_sangre;
+        $cambiaSangre = $sangreAnterior !== $tipoSangre;
+
+        DB::transaction(function () use ($paciente, $historia, $datos, $tipoSangre, $cambiaSangre) {
+            $paciente->actualizar(Arr::except($datos, 'tipo_sangre'));
+            if ($cambiaSangre) {
+                $historia->update(['tipo_sangre' => $tipoSangre, 'fecha_actualizacion' => now()]);
+            }
+        });
 
         ServicioBitacora::registrar(ServicioBitacora::ACCION, 'MODIFICAR', 'Pacientes', $paciente->id,
-            "Modificación del paciente {$paciente->codigo}");
+            "Modificación del paciente {$paciente->codigo}"
+            . ($cambiaSangre ? '; tipo de sangre: ' . ($sangreAnterior ?? 'sin registrar') . ' → ' . ($tipoSangre ?? 'sin registrar') : ''));
 
         return redirect()->route('pacientes.index')->with('exito', "Paciente {$paciente->codigo} actualizado.");
     }
@@ -67,6 +93,21 @@ class CtrlPacientes extends Controller
             "Desactivación del paciente {$paciente->codigo}");
 
         return redirect()->route('pacientes.index')->with('exito', "Paciente {$paciente->codigo} desactivado; su historial se conserva.");
+    }
+
+    /**
+     * CU08 – Gestionar pacientes (cambiarEstado, aprobado por la autora): reactiva a un paciente
+     * desactivado (B2, B6) y lo registra en la bitácora.
+     */
+    public function cambiarEstado(CambiarEstadoPacienteRequest $request, Paciente $paciente): RedirectResponse
+    {
+        $request->validated();   // accion = activar
+        $paciente->actualizar(['estado' => true]);
+
+        ServicioBitacora::registrar(ServicioBitacora::ACCION, 'ACTIVAR', 'Pacientes', $paciente->id,
+            "Reactivación del paciente {$paciente->codigo}");
+
+        return redirect()->route('pacientes.index')->with('exito', "Paciente {$paciente->codigo} reactivado.");
     }
 
     /**

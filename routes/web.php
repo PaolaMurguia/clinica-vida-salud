@@ -129,6 +129,8 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     Route::post('/pacientes', [CtrlPacientes::class, 'store'])->name('pacientes.store');
     Route::put('/pacientes/{paciente}', [CtrlPacientes::class, 'update'])->whereNumber('paciente')->name('pacientes.update');
     Route::delete('/pacientes/{paciente}', [CtrlPacientes::class, 'destroy'])->whereNumber('paciente')->name('pacientes.destroy');
+    // reactivación aprobada por la autora (B2, B6); desactivar sigue siendo destroy()
+    Route::patch('/pacientes/{paciente}/estado', [CtrlPacientes::class, 'cambiarEstado'])->whereNumber('paciente')->name('pacientes.cambiarEstado');
 
     // CU09 – Buscar paciente: UI_BuscarPaciente (V.buscarPaciente) → CtrlPacientes@buscar y @show
     Route::get('/pacientes/buscar', [CtrlPacientes::class, 'buscar'])->name('pacientes.buscar');

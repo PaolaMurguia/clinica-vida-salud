@@ -54,7 +54,7 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 
 | CU | Diferencia | Motivo | Estado |
 |---|---|---|---|
-| CU08 | Un paciente desactivado no se puede reactivar desde el sistema. | El documento solo define `destroy()` / `desactivar()`; B6 habla de `cambiarEstado()` en los demás módulos. | **Para decidir.** |
+| CU08 | Se agrega `CtrlPacientes@cambiarEstado()` con `accion=activar` (`PATCH /pacientes/{paciente}/estado`, `CambiarEstadoPacienteRequest`) para reactivar a un paciente desactivado, con registro `ACTIVAR` en la bitácora. Desactivar sigue siendo `destroy()` del documento. | El documento solo define `destroy()` / `desactivar()`; la autora aprobó la reactivación al cerrar el paso 5 (B2, B6). Es un método que no está en el documento. | Aplicado; prueba `GestionarPacientesTest::test_reactiva_un_paciente_desactivado_y_lo_registra`. |
 | CU08, CU10 | El sexo es obligatorio en los formularios, aunque la columna admite nulos. | Los dos CU lo piden entre los datos del paciente. | Aplicado. |
 | CU08, CU10, CU11 | El CI de pacientes usa el mismo formato aprobado para médicos (5 a 12 dígitos con extensión opcional). | Coherencia con la aprobación del paso 4. | Aplicado. |
 | CU08 | Con un CI duplicado, el mensaje muestra el código y el nombre del paciente existente («Ya existe el paciente P-0001 – …»). | Excepción 1: «muestra al paciente existente». `existeCI()` y `buscarPorCI()` se usan en el Form Request. | Aplicado. |
@@ -64,11 +64,11 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 | CU10 | Los apellidos se comparan sin distinguir mayúsculas, tildes ni espacios repetidos. Una ficha inactiva se trata como «los datos no coinciden: acuda a recepción». | Paso 5 y excepción 2. | Aplicado. |
 | CU10 | Al vincular una ficha existente, se marca la aceptación de privacidad y se completa el correo si la ficha no tenía. Usa `Paciente::actualizar()` y `Usuario::buscarPorLogin()`, que no figuran en la tabla de CU10. | Son métodos del documento (CU08 y CU01). | Aplicado. |
 | CU10 | `Usuario::crear()` ahora recarga el registro después de guardarlo. | Sin eso, la cuenta recién creada no tenía en memoria los valores por defecto (`estado`) y `VerificarCuentaActiva` cerraba la sesión. Lo detectó una prueba. | Aplicado. |
-| CU11 | El tipo de sangre se declara una sola vez; si ya está registrado, el paciente no lo cambia (lo cambia la clínica). | El documento no dice quién lo corrige; así se evita que el paciente sobrescriba un dato de la clínica. | **Para decidir.** |
+| CU11 | El tipo de sangre se declara una sola vez; si ya está registrado, el paciente no lo cambia (lo cambia la clínica). | El documento no dice quién lo corrige; así se evita que el paciente sobrescriba un dato de la clínica. La autora lo aprobó al cerrar el paso 5: la recepcionista y el administrador lo corrigen en CU08 (campo «Tipo de sangre» del formulario de pacientes, guardado en la historia clínica, B7, y registrado en la bitácora con el valor anterior y el nuevo). | Aplicado; prueba `GestionarPacientesTest::test_recepcionista_y_administrador_corrigen_el_tipo_de_sangre`. |
 | CU11 | El paciente declara solo los cuatro tipos del paso 4: alergia, enfermedad crónica, medicamento y antecedente familiar. «Cirugía» y «Otro» quedan para el médico. | Paso 4. | Aplicado. |
 | CU11 | El correo del perfil y el de la cuenta se mantienen iguales (`Usuario::actualizarCorreo()`). La preferencia de privacidad es la casilla `acepta_privacidad`. | Pasos 3 y 5. | Aplicado. |
 | CU11 | Intentar enviar CI, nombres, apellidos o fecha de nacimiento devuelve el error «Solo la recepción puede cambiar…». | Excepción 2. | Aplicado. |
-| CU12 | Solo la recepcionista registra seguros; el administrador no tiene acceso. | Actor del documento: Recepcionista (A1 da al administrador el CRUD de pacientes, no el de seguros). | **Para decidir.** |
+| CU12 | Solo la recepcionista registra seguros; el administrador no tiene acceso. | Actor del documento: Recepcionista (A1 da al administrador el CRUD de pacientes, no el de seguros). | Aprobado por la autora al cerrar el paso 5; prueba `RegistrarSeguroTest::test_solo_la_recepcionista_registra_seguros`. |
 | CU12 | La póliza duplicada se busca sin distinguir mayúsculas, con una consulta de Eloquent en el Form Request (el documento no tiene un método para eso). | Excepción 1 y B13. | Aplicado. |
 
 ## Nombres que no están en el documento (aprobados por la autora)

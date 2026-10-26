@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Pacientes;
 
+use App\Models\Historia;
 use App\Models\Paciente;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
@@ -40,6 +41,8 @@ class StorePacienteRequest extends FormRequest
             'contacto_emerg_parent' => array_filter([Rule::requiredIf($menor), 'nullable', 'string', 'max:40',
                 $menor ? Rule::in(self::PARENTESCOS_MENOR) : null]),
             'contacto_emerg_tel'    => [Rule::requiredIf($menor), 'nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]{6,20}$/'],
+            // se guarda en la historia clínica (B7); la recepción corrige el declarado por el paciente
+            'tipo_sangre'           => ['nullable', Rule::in(Historia::TIPOS_SANGRE)],
         ];
     }
 

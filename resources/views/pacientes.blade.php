@@ -75,6 +75,15 @@
                                    class="form-control @error('direccion') is-invalid @enderror">
                         </div>
                     </div>
+                    <div class="mt-2">
+                        <label for="tipo_sangre" class="form-label">Tipo de sangre <small class="text-muted">(corrige el declarado por el paciente)</small></label>
+                        <select id="tipo_sangre" name="tipo_sangre" class="form-select @error('tipo_sangre') is-invalid @enderror">
+                            <option value="">Sin registrar</option>
+                            @foreach (\App\Models\Historia::TIPOS_SANGRE as $tipoSangre)
+                                <option value="{{ $tipoSangre }}" @selected(old('tipo_sangre', $editado?->historia?->tipo_sangre) === $tipoSangre)>{{ $tipoSangre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <fieldset class="border rounded p-2 mt-3">
                         <legend class="float-none w-auto px-1 fs-6 mb-0">Contacto de emergencia</legend>
                         <div class="form-text mb-1">Obligatorio para menores de 18 años: madre, padre o tutor.</div>
@@ -133,6 +142,12 @@
                                       onsubmit="return confirm('¿Desactivar al paciente {{ $paciente->codigo }}? Su historial se conserva.')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Desactivar</button>
+                                </form>
+                            @else
+                                {{-- cambiarEstado(): reactivación aprobada por la autora --}}
+                                <form method="POST" action="{{ route('pacientes.cambiarEstado', $paciente) }}" class="d-inline">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" name="accion" value="activar" class="btn btn-sm btn-outline-success">Reactivar</button>
                                 </form>
                             @endif
                         </td>
