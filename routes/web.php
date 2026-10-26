@@ -8,6 +8,7 @@ use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
+use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
@@ -105,4 +106,17 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::get('/horarios', [CtrlHorarios::class, 'index'])->name('horarios.index');
     Route::post('/horarios', [CtrlHorarios::class, 'store'])->name('horarios.store');
     Route::patch('/horarios/{horario}/estado', [CtrlHorarios::class, 'cambiarEstado'])->name('horarios.cambiarEstado');
+});
+
+// =====================================================================
+// Módulo Pacientes: CU08, CU09, CU10, CU11, CU12
+// =====================================================================
+
+// --- Recepcionista y Administrador (A1: el administrador tiene el CRUD completo) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Administrador'])->group(function () {
+    // CU08 – Gestionar pacientes: UI_Pacientes (V.pacientes) → CtrlPacientes
+    Route::get('/pacientes', [CtrlPacientes::class, 'index'])->name('pacientes.index');
+    Route::post('/pacientes', [CtrlPacientes::class, 'store'])->name('pacientes.store');
+    Route::put('/pacientes/{paciente}', [CtrlPacientes::class, 'update'])->whereNumber('paciente')->name('pacientes.update');
+    Route::delete('/pacientes/{paciente}', [CtrlPacientes::class, 'destroy'])->whereNumber('paciente')->name('pacientes.destroy');
 });

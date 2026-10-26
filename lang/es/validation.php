@@ -96,5 +96,12 @@ return [
         'hora_inicio'              => 'la hora inicial',
         'hora_fin'                 => 'la hora final',
         'duracion_cita_min'        => 'la duración de la franja',
+        // CU08
+        'fecha_nacimiento'         => 'la fecha de nacimiento',
+        'sexo'                     => 'el sexo',
+        'direccion'                => 'la dirección',
+        'contacto_emerg_nombre'    => 'el nombre del contacto de emergencia',
+        'contacto_emerg_parent'    => 'el parentesco del contacto de emergencia',
+        'contacto_emerg_tel'       => 'el teléfono del contacto de emergencia',
     ],
 ];
