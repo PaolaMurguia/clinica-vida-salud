@@ -1,0 +1,40 @@
+# Dependencias y compilados: se generan dentro de la imagen
+/vendor
+/node_modules
+/public/build
+/public/hot
+
+# Claves y configuración local: en Render se usan variables de entorno
+.env
+.env.*
+!.env.example
+
+# Control de versiones, editores y sistema
+.git
+.gitignore
+.github
+.idea
+.vscode
+.fleet
+.zed
+*.log
+Thumbs.db
+.DS_Store
+
+# Archivos generados en tiempo de ejecución
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/bootstrap/cache/*.php
+/.phpunit.cache
+.phpunit.result.cache
+
+# No se necesitan en producción
+/tests
+/docs
+phpunit.xml
+CLAUDE.md
+Dockerfile
+.dockerignore

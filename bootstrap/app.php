@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Despliegue en Render: el TLS lo termina el proxy de Render, que envía X-Forwarded-*.
+        // Se confía en él para que Laravel reconozca https y la IP real del usuario (bitácora).
+        $middleware->trustProxies(at: '*');
+
         // CU03: una cuenta desactivada pierde su sesión en la siguiente petición
         $middleware->web(append: [VerificarCuentaActiva::class]);
 

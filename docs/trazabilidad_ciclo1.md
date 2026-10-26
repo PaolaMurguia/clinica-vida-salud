@@ -68,3 +68,14 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 - **Instalación limpia verificada:** se clonó el repositorio en una carpeta nueva y se siguió solo el `README.md` (composer, npm, `.env`, `key:generate`, base nueva, `migrate:fresh --seed`, `serve`). Los usuarios de prueba de cada rol ingresan y las pruebas pasan. Se agregó al README la nota de rutas largas en Windows (`core.longpaths`).
 - **Claves:** `.env` no está en el repositorio ni en el historial; `.env.example` no tiene claves.
 - **Diferencias con el documento:** `docs/diferencias_con_documento.md`.
+
+## Despliegue (Render con Docker)
+
+| Elemento | Archivo | Requisito |
+|---|---|---|
+| Imagen multi-etapa (Node 22 + PHP 8.2/Apache con `pdo_pgsql`, Composer `--no-dev`) | `Dockerfile`, `.dockerignore` | RNF13 |
+| Arranque: puerto `PORT`, `APP_INIT_DB` → `migrate:fresh --seed` o `migrate`, cachés | `docker/entrypoint.sh` | RNF13, RN14 |
+| Conexión por `DB_URL` conservando `timezone=America/La_Paz` | `config/database.php` | RN14 |
+| Proxy de Render y https forzado en producción | `bootstrap/app.php` (`trustProxies`), `app/Providers/AppServiceProvider.php` (`URL::forceScheme`) | RNF15 |
+| Logs en el panel de Render (enlace de CU27 en modo `log`) | `LOG_CHANNEL=stderr`, `MAIL_MAILER=log` | CU27, RNF08 |
+| Variables de entorno sin claves reales | `README.md`, sección «Despliegue en Render» | — |
