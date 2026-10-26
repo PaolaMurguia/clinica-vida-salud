@@ -91,5 +91,10 @@ return [
         'especialidades'           => 'las especialidades',
         'especialidades.*'         => 'la especialidad',
         'criterio'                 => 'el criterio de búsqueda',
+        // CU07
+        'dia_semana'               => 'el día de la semana',
+        'hora_inicio'              => 'la hora inicial',
+        'hora_fin'                 => 'la hora final',
+        'duracion_cita_min'        => 'la duración de la franja',
     ],
 ];

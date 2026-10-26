@@ -5,6 +5,7 @@ use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use App\Http\Controllers\Administracion\CtrlBitacora;
 use App\Http\Controllers\Administracion\CtrlEspecialidades;
+use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Models\Recuperacion;
@@ -98,4 +99,10 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::post('/medicos', [CtrlMedicos::class, 'store'])->name('medicos.store');
     Route::put('/medicos/{medico}', [CtrlMedicos::class, 'update'])->name('medicos.update');
     Route::patch('/medicos/{medico}/estado', [CtrlMedicos::class, 'cambiarEstado'])->name('medicos.cambiarEstado');
+
+    // CU07 – Definir horarios de atención: UI_Horarios (V.horarios y V.formHorario) → CtrlHorarios
+    // Sin edición en el ciclo 1: se desactiva y se agrega otro (B3)
+    Route::get('/horarios', [CtrlHorarios::class, 'index'])->name('horarios.index');
+    Route::post('/horarios', [CtrlHorarios::class, 'store'])->name('horarios.store');
+    Route::patch('/horarios/{horario}/estado', [CtrlHorarios::class, 'cambiarEstado'])->name('horarios.cambiarEstado');
 });
