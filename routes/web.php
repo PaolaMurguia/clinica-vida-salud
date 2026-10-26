@@ -3,6 +3,7 @@
 use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
+use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
@@ -64,4 +65,16 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal'])->grou
     // CU01, paso 9: menú principal (B1) para el personal y portal para el paciente
     Route::view('/menu', 'menu')->middleware('rol:Administrador,Recepcionista,Médico')->name('menu');
     Route::view('/portal', 'portal')->middleware('rol:Paciente')->name('portal');
+});
+
+// =====================================================================
+// Módulo Administración: CU03, CU04, CU05, CU06, CU07 (solo Administrador)
+// =====================================================================
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Administrador'])->group(function () {
+    // CU03 – Gestionar usuarios y roles: UI_Usuarios (V.usuarios) → CtrlUsuarios
+    Route::get('/usuarios', [CtrlUsuarios::class, 'index'])->name('usuarios.index');
+    Route::post('/usuarios', [CtrlUsuarios::class, 'store'])->name('usuarios.store');
+    Route::put('/usuarios/{usuario}', [CtrlUsuarios::class, 'update'])->name('usuarios.update');
+    Route::post('/usuarios/{usuario}/restablecer-clave', [CtrlUsuarios::class, 'restablecerClave'])->name('usuarios.restablecerClave');
+    Route::patch('/usuarios/{usuario}/estado', [CtrlUsuarios::class, 'cambiarEstado'])->name('usuarios.cambiarEstado');
 });

@@ -36,7 +36,7 @@ Registro de decisiones en las que la implementación agrega algo que `docs/casos
 | Middlewares | `VerificarRol`, `VerificarClaveTemporal`, `SinCache` | RNF03, RN23 y CU02 (botón «Atrás»). |
 | Servicio | `ServicioBitacora` | Decisión B8 de `CLAUDE.md`. |
 | Política RNF05 | `Password::defaults()` de Laravel | Sin clase con nombre nuevo. |
-| Opciones del menú por rol | `config/menu.php` | Una sola lista para la barra, `V.menu` y el portal. **Pendiente de aprobación** (lo elegí al implementar). |
+| Opciones del menú por rol | `config/menu.php` | Una sola lista para la barra, `V.menu` y el portal. Aprobado por la autora al cerrar el paso 3. |
 
 ## Modelos (paso 2)
 

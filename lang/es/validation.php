@@ -64,5 +64,12 @@ return [
         'clave_nueva'              => 'la contraseña nueva',
         'clave_nueva_confirmation' => 'la confirmación',
         'token'                    => 'el enlace',
+        // CU03
+        'nombre_usuario'           => 'el nombre de usuario',
+        'correo'                   => 'el correo',
+        'rol_id'                   => 'el rol',
+        'medico_id'                => 'el médico vinculado',
+        'puede_marcar_atendida'    => 'el permiso para marcar citas atendidas',
+        'accion'                   => 'la acción',
     ],
 ];
