@@ -3,7 +3,7 @@
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementación. Se actualiza en cada commit.
 
 **Estado:** ✅ implementado y probado · 🟡 parcial · ⬜ pendiente
-**Último paso cerrado:** Paso 4 – Administración (CU03 a CU07). **En curso:** Paso 5 – Pacientes (CU08 listo).
+**Último paso cerrado:** Paso 4 – Administración (CU03 a CU07). **En curso:** Paso 5 – Pacientes (CU08 y CU09 listos).
 
 ## Resumen por caso de uso
 
@@ -17,7 +17,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | CU06 | Gestionar médicos | Administracion | `medicos` (formulario integrado y buscador) | `Administracion\CtrlMedicos` → index(), store(), update(), cambiarEstado(), buscar() ✅ | `Medico` → listar(), existeCI() (en el Form Request), crear(), actualizar(), cambiarEstado(), buscar(), obtener() ✅ · `Especialidad` → listar() ✅ · `Atiende` → asignar() ✅ · `Bitacora` → registrar() ✅ | `GET /medicos` (`medicos.index`, `?editar=`), `GET /medicos/buscar` (`medicos.buscar`), `POST /medicos`, `PUT /medicos/{medico}`, `PATCH /medicos/{medico}/estado` | `Administracion/GestionarMedicosTest` | ✅ |
 | CU07 | Definir horarios de atención | Administracion | `horarios` + `formHorario` (incluida en `horarios`) | `Administracion\CtrlHorarios` → index(), store(), cambiarEstado() ✅ | `Medico` → obtener(), listar() ✅ · `Horario` → listar(), seSuperpone() (en el Form Request y al reactivar), crear(), generarFranjas(), cambiarEstado() ✅ · `Bitacora` → registrar() ✅ | `GET /horarios` (`horarios.index`, `?medico_id=`), `POST /horarios`, `PATCH /horarios/{horario}/estado` | `Administracion/DefinirHorariosTest` | ✅ |
 | CU08 | Gestionar pacientes | Pacientes | `pacientes` (formulario integrado, B1) | `Pacientes\CtrlPacientes` → index(), store(), update(), destroy() ✅ | `Paciente` → listar(), existeCI() y buscarPorCI() (en el Form Request), crear(), actualizar(), desactivar(), obtener() ✅ · `Bitacora` → registrar() ✅ | `GET /pacientes` (`pacientes.index`, `?editar=`), `POST /pacientes`, `PUT /pacientes/{paciente}`, `DELETE /pacientes/{paciente}` (desactiva) | `Pacientes/GestionarPacientesTest` | ✅ |
-| CU09 | Buscar paciente | Pacientes | `buscarPaciente` | `CtrlPacientes` → buscar(), show() | `Paciente` → buscar(), obtener() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
+| CU09 | Buscar paciente | Pacientes | `buscarPaciente` (resultados y paciente seleccionado) | `Pacientes\CtrlPacientes` → buscar(), show() ✅ | `Paciente` → buscar() (sin tildes, hasta 50), obtener() ✅ | `GET /pacientes/buscar` (`pacientes.buscar`), `GET /pacientes/{paciente}` (`pacientes.show`) | `Pacientes/BuscarPacienteTest` | ✅ |
 | CU10 | Registrarse como paciente | Pacientes | `registro` | `CtrlRegistro` → registrar() | `Paciente` → buscarPorCI(), crear() ✅ · `Rol` → obtener() ✅ · `Usuario` → crear() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU11 | Gestionar perfil del paciente | Pacientes | `perfil` | `CtrlPerfil` → show(), update(), storeAntecedente() | `Paciente` → obtener(), actualizar() ✅ · `Historia` → obtener() ✅ · `Antecedente` → listar(), crear() ✅ · `Seguro` → obtenerActivo() ✅ · `Usuario` → actualizarCorreo() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU12 | Registrar seguro del paciente | Pacientes | `seguro` | `CtrlSeguros` → index(), store(), destroy() | `Paciente` → obtener() ✅ · `Seguro` → obtenerActivo(), darDeBaja(), crear() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |

@@ -119,4 +119,8 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     Route::post('/pacientes', [CtrlPacientes::class, 'store'])->name('pacientes.store');
     Route::put('/pacientes/{paciente}', [CtrlPacientes::class, 'update'])->whereNumber('paciente')->name('pacientes.update');
     Route::delete('/pacientes/{paciente}', [CtrlPacientes::class, 'destroy'])->whereNumber('paciente')->name('pacientes.destroy');
+
+    // CU09 – Buscar paciente: UI_BuscarPaciente (V.buscarPaciente) → CtrlPacientes@buscar y @show
+    Route::get('/pacientes/buscar', [CtrlPacientes::class, 'buscar'])->name('pacientes.buscar');
+    Route::get('/pacientes/{paciente}', [CtrlPacientes::class, 'show'])->whereNumber('paciente')->name('pacientes.show');
 });

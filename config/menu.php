@@ -17,6 +17,7 @@ return [
             ['texto' => 'Médicos',        'ruta' => 'medicos.index',        'descripcion' => 'Médicos y sus especialidades (CU06)'],
             ['texto' => 'Horarios',       'ruta' => 'horarios.index',       'descripcion' => 'Horarios de atención (CU07)'],
             ['texto' => 'Pacientes',      'ruta' => 'pacientes.index',      'descripcion' => 'Registro de pacientes (CU08)'],
+            ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',    'descripcion' => 'Por CI, nombre o apellido (CU09)'],
         ],
         'Recepcionista' => [
             ['texto' => 'Pacientes',       'ruta' => 'pacientes.index',               'descripcion' => 'Registro de pacientes (CU08)'],
