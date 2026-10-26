@@ -83,22 +83,18 @@ class CtrlDisponibilidad extends Controller
                 return ['bloqueo' => null, 'atiende' => false, 'franjas' => []];
             }
 
-            $ocupadas = Cita::listarOcupadas($medico->id, $dia);   // solo horas, sin datos de pacientes
-            $franjas = [];
-            foreach ($horarios as $horario) {
-                foreach ($horario->generarFranjas() as $franja) {
-                    // paso 5: se descartan las franjas pasadas
-                    if ($dia->copy()->setTimeFromTimeString($franja['inicio'])->lte(now())) {
-                        continue;
-                    }
-                    // RN09: listarOcupadas ya excluye las canceladas
-                    $ocupada = $ocupadas->contains(fn ($cita) => substr($cita->hora_inicio, 0, 5) < $franja['fin']
-                        && substr($cita->hora_fin, 0, 5) > $franja['inicio']);
-                    $franjas[] = $franja + ['estado' => $ocupada ? 'ocupada' : 'libre'];
-                }
-            }
+            // paso 4: franjas de los horarios del día; paso 5: se descartan las pasadas
+            $franjas = $horarios
+                ->flatMap(fn (Horario $horario) => $horario->generarFranjas())
+                ->reject(fn (array $franja) => $dia->copy()->setTimeFromTimeString($franja['inicio'])->lte(now()));
 
-            return ['bloqueo' => null, 'atiende' => true, 'franjas' => $franjas];
+            // paso 5: horas ocupadas por citas no canceladas (RN09), sin datos de los pacientes
+            $ocupadas = Cita::listarOcupadas($medico->id, $dia);
+
+            return ['bloqueo' => null, 'atiende' => true, 'franjas' => $franjas->map(fn (array $franja) => $franja + [
+                'estado' => $ocupadas->contains(fn ($cita) => substr($cita->hora_inicio, 0, 5) < $franja['fin']
+                    && substr($cita->hora_fin, 0, 5) > $franja['inicio']) ? 'ocupada' : 'libre',
+            ])->values()->all()];
         };
 
         $resultado = $calcularDia($fecha);

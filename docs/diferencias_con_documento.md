@@ -71,6 +71,30 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 | CU12 | Solo la recepcionista registra seguros; el administrador no tiene acceso. | Actor del documento: Recepcionista (A1 da al administrador el CRUD de pacientes, no el de seguros). | Aprobado por la autora al cerrar el paso 5; prueba `RegistrarSeguroTest::test_solo_la_recepcionista_registra_seguros`. |
 | CU12 | La póliza duplicada se busca sin distinguir mayúsculas, con una consulta de Eloquent en el Form Request (el documento no tiene un método para eso). | Excepción 1 y B13. | Aplicado. |
 
+## Revisión del paso 6 (Disponibilidad)
+
+`CtrlDisponibilidad` tiene exactamente los métodos del documento: especialidades(), medicos() y franjas(). La vista es `disponibilidad`. Comparación con el esquema indicado por la autora:
+
+| Carril del esquema | Implementación | Prueba |
+|---|---|---|
+| Elegir especialidad | `especialidades()` → `Paciente::obtener()` + `Especialidad::listarPorEdad()` | `test_el_paciente_ve_solo_las_especialidades_de_su_edad`, `test_paciente_sin_especialidad_para_su_edad` |
+| Elegir médico | `medicos()` → `Medico::listarPorEspecialidad()` | `test_lista_los_medicos_activos_de_la_especialidad` |
+| Fecha con horario | `franjas()`: `Bloqueo::estaBloqueada()` → `Horario::obtenerDelDia()` → `Horario::generarFranjas()` → `Cita::listarOcupadas()`, en ese orden | `test_franjas_libres_y_ocupadas_sin_datos_de_otros_pacientes`, `test_descarta_las_franjas_pasadas_del_dia`, `test_las_citas_canceladas_no_ocupan_la_franja` |
+| Fecha bloqueada con motivo | `estaBloqueada()` devuelve el bloqueo y la vista muestra su motivo | `test_fecha_bloqueada_del_medico_muestra_el_motivo_y_la_siguiente_fecha`, `test_fecha_bloqueada_para_toda_la_clinica` |
+| No atiende ese día → siguiente fecha | `obtenerDelDia()` vacío → búsqueda de la siguiente fecha con franjas libres | `test_medico_que_no_atiende_ese_dia_sugiere_la_siguiente_fecha`, `test_sin_franjas_libres_sugiere_la_siguiente_fecha` |
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU13 | No se usa `fn_franjas_disponibles` ni en el código ni en las pruebas. | Indicación de la autora en el paso 6 (A3 permitía usarla en pruebas para contrastar). | Aplicado. |
+| CU13 | En la revisión se corrigió el orden de llamadas: `listarOcupadas()` se llamaba antes de `generarFranjas()`. | El esquema pide `estaBloqueada → obtenerDelDia → generarFranjas → listarOcupadas`. | Corregido. |
+| CU13 | El cálculo de un día es una función local (closure) dentro de `franjas()`; se reutiliza para buscar la siguiente fecha disponible. | Regla 1 y B13: sin métodos nuevos en el controlador. | Aplicado. |
+| CU13 | La siguiente fecha se busca en los 60 días siguientes (saltando bloqueos y días sin horario). Si no hay ninguna: «No hay disponibilidad en los próximos 60 días». También se sugiere cuando el médico atiende pero no tiene franjas libres. | El documento no fija el plazo de búsqueda. | Aplicado. |
+| CU13 | La recepcionista consulta para el paciente seleccionado en CU09 (botón «Disponibilidad»); sin paciente, la vista pide seleccionarlo. Un paciente siempre consulta para sí mismo, aunque envíe otro `paciente_id` (RN18). | Paso 1: las especialidades dependen de la edad del paciente (RN15). | Aplicado. |
+| CU13 | En el paso 1 la edad se calcula a hoy; al consultar franjas se usa la edad en la fecha elegida. | RN15: «edad del paciente en la fecha de la cita». | Aplicado. |
+| CU13 | El médico se obtiene con `Medico::listarPorEspecialidad()` y la especialidad con `Especialidad::listarPorEdad()` (los métodos de la tabla de CU13), no con `obtener()`. | Fidelidad con la tabla de clases de CU13. | Aplicado. |
+| CU13 | Las franjas pasadas del día no se muestran; las ocupadas se muestran como «Ocupada», sin datos de la cita ni del paciente. Las franjas libres no son seleccionables todavía. | Pasos 5 y 6; programar la cita es CU14 (ciclo 2). | Aplicado. |
+| CU13 | Form Requests `EspecialidadesRequest`, `MedicosRequest` y `FranjasRequest` (`<método>Request`, porque el módulo tiene un solo controlador). | Convención aprobada. | Aplicado. |
+
 ## Nombres que no están en el documento (aprobados por la autora)
 
 | Elemento | Nombre | Motivo |
