@@ -22,6 +22,10 @@ Para comprobar PHP: `php -v` y `php -m` (deben aparecer `pdo_pgsql` y `pgsql`).
    cd clinica-vida-salud
    git checkout desarrollo
    ```
+   En **Windows**, si la carpeta de destino tiene una ruta larga, `git clone` puede fallar con *Filename too long*. Antes de clonar, active las rutas largas (una sola vez) o clone en una carpeta corta como `C:\proyectos`:
+   ```bash
+   git config --global core.longpaths true
+   ```
 2. **Dependencias de PHP:**
    ```bash
    composer install

@@ -51,3 +51,20 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | Mensajes en español | `lang/es/validation.php`, `lang/es/pagination.php` | Form Requests | todos |
 
 Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `ParametroLaboratorio`, `RangoReferencia`, `ExamenLaboratorio`, `ResultadoLaboratorio`, `Notificacion`) solo tienen relaciones; sus métodos se agregan con sus CU.
+
+## Pruebas mínimas del enunciado (sección 8)
+
+| N.º | Prueba | Ciclo | Prueba automática | Estado |
+|---|---|---|---|---|
+| 1 | Registrar un paciente nuevo | 1 | `Pacientes/GestionarPacientesTest::test_registra_un_paciente_con_codigo` | ✅ |
+| 2 | Registrar un paciente con CI duplicado | 1 | `Pacientes/GestionarPacientesTest::test_rechaza_un_ci_duplicado_y_muestra_el_paciente_existente` | ✅ |
+| 3–8 | Programar, superponer, reservar fuera de horario y cancelar citas; historial del paciente; citas de un médico por fecha | 2 | — (CU14 en adelante) | ⬜ ciclo 2 |
+| 9 | Ingresar a una página interna sin iniciar sesión | 1 | `Acceso/IniciarSesionTest::test_pagina_interna_sin_sesion_lleva_al_login`, `Pacientes/GestionarPacientesTest::test_pagina_interna_sin_sesion` | ✅ |
+| 10 | Ejecutar una operación con datos inválidos | 1 | `Acceso/IniciarSesionTest::test_campos_vacios_rechazados_en_el_servidor`, `Pacientes/GestionarPacientesTest::test_campos_obligatorios_vacios_y_formatos` (además, cada CU prueba sus validaciones) | ✅ |
+
+## Cierre del ciclo 1
+
+- **Pruebas:** 170 pruebas automáticas en verde sobre `clinica_vida_salud_test` (`phpunit.xml` y `tests/TestCase.php`).
+- **Instalación limpia verificada:** se clonó el repositorio en una carpeta nueva y se siguió solo el `README.md` (composer, npm, `.env`, `key:generate`, base nueva, `migrate:fresh --seed`, `serve`). Los usuarios de prueba de cada rol ingresan y las pruebas pasan. Se agregó al README la nota de rutas largas en Windows (`core.longpaths`).
+- **Claves:** `.env` no está en el repositorio ni en el historial; `.env.example` no tiene claves.
+- **Diferencias con el documento:** `docs/diferencias_con_documento.md`.
