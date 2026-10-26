@@ -3,7 +3,7 @@
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementación. Se actualiza en cada commit.
 
 **Estado:** ✅ implementado y probado · 🟡 parcial · ⬜ pendiente
-**Último paso cerrado:** Paso 3 – Acceso (CU01, CU02, CU26 y CU27). **En curso:** Paso 4 – Administración (CU03 y CU04 listos).
+**Último paso cerrado:** Paso 3 – Acceso (CU01, CU02, CU26 y CU27). **En curso:** Paso 4 – Administración (CU03, CU04 y CU05 listos).
 
 ## Resumen por caso de uso
 
@@ -13,7 +13,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | CU02 | Cerrar sesión | Acceso | `menu` (botón «Salir» = salir(); también en la plantilla y el portal) | `Acceso\CtrlSesion` → cerrarSesion() ✅ | `Bitacora` → registrar() ✅ | `POST /logout` (`logout`) | `Acceso/CerrarSesionTest` | ✅ |
 | CU03 | Gestionar usuarios y roles | Administracion | `usuarios` (formulario integrado, B1) | `Administracion\CtrlUsuarios` → index(), store(), update(), restablecerClave(), cambiarEstado() ✅ | `Usuario` → listar(), crear(), actualizar(), marcarTemporal(), actualizarEstado(), obtener(), buscarPorLogin() ✅ · `Rol` → obtener() ✅ · `Medico` → obtener(), listar() ✅ · `Bitacora` → registrar() ✅ | `GET /usuarios` (`usuarios.index`, `?editar=`), `POST /usuarios`, `PUT /usuarios/{usuario}`, `POST /usuarios/{usuario}/restablecer-clave`, `PATCH /usuarios/{usuario}/estado` | `Administracion/GestionarUsuariosTest` | ✅ |
 | CU04 | Consultar bitácora | Administracion | `bitacora` | `Administracion\CtrlBitacora` → index(), filtrar(), exportar() ✅ | `Bitacora` → listar(), buscar() ✅ · `Usuario` → obtener(), listar() ✅ | `GET /bitacora` (`bitacora.index`), `GET /bitacora/filtrar` (`bitacora.filtrar`), `GET /bitacora/exportar` (`bitacora.exportar`, CSV) | `Administracion/ConsultarBitacoraTest` | ✅ |
-| CU05 | Gestionar especialidades | Administracion | `especialidades` | `CtrlEspecialidades` → index(), store(), update(), cambiarEstado() | `Especialidad` → listar(), existeNombre(), crear(), actualizar(), cambiarEstado() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
+| CU05 | Gestionar especialidades | Administracion | `especialidades` (formulario integrado, B1) | `Administracion\CtrlEspecialidades` → index(), store(), update(), cambiarEstado() ✅ | `Especialidad` → listar(), existeNombre() (en el Form Request), crear(), actualizar(), cambiarEstado() ✅ · `Bitacora` → registrar() ✅ | `GET /especialidades` (`especialidades.index`, `?editar=`), `POST /especialidades`, `PUT /especialidades/{especialidad}`, `PATCH /especialidades/{especialidad}/estado` | `Administracion/GestionarEspecialidadesTest` | ✅ |
 | CU06 | Gestionar médicos | Administracion | `medicos` | `CtrlMedicos` → index(), store(), update(), cambiarEstado(), buscar() | `Medico` → listar(), existeCI(), crear(), actualizar(), cambiarEstado(), buscar() ✅ · `Especialidad` → listar() ✅ · `Atiende` → asignar() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU07 | Definir horarios de atención | Administracion | `horarios`, `formHorario` | `CtrlHorarios` → index(), store(), cambiarEstado() | `Medico` → obtener() ✅ · `Horario` → listar(), seSuperpone(), crear(), generarFranjas(), cambiarEstado() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |
 | CU08 | Gestionar pacientes | Pacientes | `pacientes` | `CtrlPacientes` → index(), store(), update(), destroy() | `Paciente` → listar(), existeCI(), crear(), actualizar(), desactivar() ✅ · `Bitacora` → registrar() ✅ | ⬜ | `ModelosTest` (modelos) | 🟡 modelos |

@@ -4,6 +4,7 @@ use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use App\Http\Controllers\Administracion\CtrlBitacora;
+use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
@@ -83,4 +84,10 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::get('/bitacora', [CtrlBitacora::class, 'index'])->name('bitacora.index');
     Route::get('/bitacora/filtrar', [CtrlBitacora::class, 'filtrar'])->name('bitacora.filtrar');
     Route::get('/bitacora/exportar', [CtrlBitacora::class, 'exportar'])->name('bitacora.exportar');
+
+    // CU05 – Gestionar especialidades: UI_Especialidades (V.especialidades) → CtrlEspecialidades
+    Route::get('/especialidades', [CtrlEspecialidades::class, 'index'])->name('especialidades.index');
+    Route::post('/especialidades', [CtrlEspecialidades::class, 'store'])->name('especialidades.store');
+    Route::put('/especialidades/{especialidad}', [CtrlEspecialidades::class, 'update'])->name('especialidades.update');
+    Route::patch('/especialidades/{especialidad}/estado', [CtrlEspecialidades::class, 'cambiarEstado'])->name('especialidades.cambiarEstado');
 });

@@ -76,5 +76,11 @@ return [
         'desde'                    => 'la fecha inicial',
         'hasta'                    => 'la fecha final',
         'modulo'                   => 'el módulo',
+        // CU05
+        'nombre'                   => 'el nombre',
+        'descripcion'              => 'la descripción',
+        'costo_consulta'           => 'el costo de la consulta',
+        'edad_minima'              => 'la edad mínima',
+        'edad_maxima'              => 'la edad máxima',
     ],
 ];
