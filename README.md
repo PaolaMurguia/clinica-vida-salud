@@ -106,6 +106,56 @@ También se puede ingresar con el correo de la cuenta, por ejemplo `admin@vidasa
 | CU26 | Cambiar contraseña | Acceso | Todos |
 | CU27 | Recuperar contraseña (enlace de un solo uso por correo) | Acceso | Todos |
 
+## Despliegue en Render
+
+La aplicación se despliega como **Web Service con Docker** (`Dockerfile` en la raíz) y una base **PostgreSQL** de Render.
+
+- **Imagen:** etapa Node 22 que compila los assets con Vite, y etapa PHP 8.2 + Apache con `pdo_pgsql` y dependencias de Composer sin las de desarrollo (`--no-dev`).
+- **Arranque** (`docker/entrypoint.sh`):
+  1. Apache escucha en el puerto de la variable `PORT` que define Render.
+  2. Con `APP_INIT_DB=true` ejecuta `php artisan migrate:fresh --seed --force`; si no, solo `php artisan migrate --force`.
+  3. Genera `config:cache`, `route:cache` y `view:cache`.
+  4. Arranca el servidor.
+- **https:** el TLS lo termina Render. La aplicación confía en su proxy (`trustProxies`) y en producción genera todas las URL con https.
+
+### Pasos
+
+1. En Render, crear una base **PostgreSQL** (versión 15 o superior). Las migraciones crean las extensiones `btree_gist`, `pgcrypto` y `unaccent`, que Render permite crear al dueño de la base.
+2. Crear un **Web Service** desde el repositorio de GitHub: *Language/Runtime* = **Docker**, rama = `master` (o `desarrollo` para pruebas), en la misma región que la base.
+3. Generar la clave de la aplicación en una copia local y copiarla en `APP_KEY`:
+   ```bash
+   php artisan key:generate --show
+   ```
+4. Cargar las variables de entorno de la tabla siguiente y desplegar.
+5. **Después del primer despliegue exitoso, cambiar `APP_INIT_DB` a `false`.** Si queda en `true`, cada despliegue borra la base y vuelve a cargar los datos de prueba.
+
+### Variables de entorno
+
+| Variable | Valor | Notas |
+|---|---|---|
+| `APP_NAME` | `Clínica Vida Salud` | |
+| `APP_ENV` | `production` | Activa https forzado. |
+| `APP_DEBUG` | `false` | Sin detalles internos en los errores (RNF08). |
+| `APP_KEY` | `base64:…` | La que muestra `php artisan key:generate --show`. **No subirla al repositorio.** |
+| `APP_URL` | `https://<su-servicio>.onrender.com` | |
+| `APP_TIMEZONE` | `America/La_Paz` | También la usa la conexión a PostgreSQL. |
+| `APP_LOCALE` / `APP_FALLBACK_LOCALE` | `es` | |
+| `DB_CONNECTION` | `pgsql` | |
+| `DB_URL` | *Internal Database URL* de la base en Render | Formato `postgres://usuario:clave@host:5432/base`; reemplaza `DB_HOST`, `DB_DATABASE`, etc. |
+| `APP_INIT_DB` | `true` en el primer despliegue, luego `false` | Ver el paso 5. |
+| `LOG_CHANNEL` | `stderr` | Los logs aparecen en la pestaña *Logs* de Render. |
+| `LOG_LEVEL` | `debug` | Necesario para ver los correos en modo `log` (se registran con nivel debug). |
+| `MAIL_MAILER` | `log` | Sin servidor de correo: el enlace de recuperación de CU27 se lee en *Logs* (buscar `recuperar-clave`). |
+| `MAIL_FROM_ADDRESS` | `no-responder@vidasalud.com` | |
+| `SESSION_DRIVER` | `file` | |
+| `SESSION_SECURE_COOKIE` | `true` | La cookie de sesión solo viaja por https. |
+| `CACHE_STORE` | `file` | |
+| `QUEUE_CONNECTION` | `sync` | |
+
+`PORT` no se configura a mano: la define Render.
+
+**Aviso:** con `MAIL_MAILER=log` los enlaces de recuperación quedan en los logs del servicio. Sirve para la demostración; en un uso real se configura un servidor SMTP con las variables `MAIL_*`.
+
 ## Documentación del proyecto
 
 - `docs/casos_de_uso_ciclo1.md`: casos de uso, reglas del negocio y requisitos no funcionales (fuente de verdad de los nombres).
