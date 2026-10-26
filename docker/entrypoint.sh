@@ -17,6 +17,22 @@ sed -i "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 echo "[entrypoint] Apache escuchará en el puerto ${PORT}"
 
+# Variables obligatorias: sin ellas Laravel responde 500, así que se detiene aquí con un aviso claro
+if [ -z "${APP_KEY}" ]; then
+    echo "[entrypoint] ERROR: falta APP_KEY. Genérela con 'php artisan key:generate --show' y cárguela en Render." >&2
+    exit 1
+fi
+if [ -z "${DB_URL}" ] && [ -z "${DB_HOST}" ]; then
+    echo "[entrypoint] ERROR: falta DB_URL (Internal Database URL de la base en Render)." >&2
+    exit 1
+fi
+# Resumen sin secretos, para revisar la configuración en los logs de Render
+echo "[entrypoint] APP_ENV=${APP_ENV} APP_DEBUG=${APP_DEBUG} DB_CONNECTION=${DB_CONNECTION} SESSION_DRIVER=${SESSION_DRIVER} CACHE_STORE=${CACHE_STORE} LOG_CHANNEL=${LOG_CHANNEL} APP_INIT_DB=${APP_INIT_DB:-false}"
+
+# Limpia configuración y caché previas (si la caché falla, no detiene el arranque)
+php artisan config:clear
+php artisan cache:clear || echo "[entrypoint] Aviso: no se pudo limpiar la caché; se continúa." >&2
+
 # 2. Base de datos (con reintentos por si PostgreSQL todavía no acepta conexiones)
 if [ "${APP_INIT_DB}" = "true" ]; then
     COMANDO="migrate:fresh --seed --force"

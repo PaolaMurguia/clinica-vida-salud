@@ -154,6 +154,13 @@ La aplicación se despliega como **Web Service con Docker** (`Dockerfile` en la 
 
 `PORT` no se configura a mano: la define Render.
 
+**Obligatorias:** `APP_KEY` y `DB_URL` (y `APP_INIT_DB=true` en el primer despliegue). Las demás ya tienen en la imagen los valores de la tabla, así que solo hace falta cargarlas para cambiarlos. Si falta `APP_KEY` o `DB_URL`, el contenedor se detiene con un mensaje `[entrypoint] ERROR` en *Logs*.
+
+**Si aparece un error 500:**
+1. Revise la pestaña *Logs* de Render: el arranque muestra una línea `[entrypoint] APP_ENV=… SESSION_DRIVER=… CACHE_STORE=…` y, con `LOG_CHANNEL=stderr`, el detalle de cada error.
+2. Compruebe que `SESSION_DRIVER` y `CACHE_STORE` valgan `file`: el esquema no tiene tablas de sesiones ni de caché.
+3. Solo para diagnosticar, puede poner `APP_DEBUG=true` y volver a `false` al terminar (RNF08).
+
 **Aviso:** con `MAIL_MAILER=log` los enlaces de recuperación quedan en los logs del servicio. Sirve para la demostración; en un uso real se configura un servidor SMTP con las variables `MAIL_*`.
 
 ## Documentación del proyecto
