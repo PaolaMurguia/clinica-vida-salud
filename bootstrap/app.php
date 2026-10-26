@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\SinCache;
 use App\Http\Middleware\VerificarClaveTemporal;
+use App\Http\Middleware\VerificarCuentaActiva;
 use App\Http\Middleware\VerificarRol;
 use App\Models\Rol;
 use Illuminate\Foundation\Application;
@@ -16,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // CU03: una cuenta desactivada pierde su sesión en la siguiente petición
+        $middleware->web(append: [VerificarCuentaActiva::class]);
+
         $middleware->alias([
             'rol'            => VerificarRol::class,
             'clave.temporal' => VerificarClaveTemporal::class,

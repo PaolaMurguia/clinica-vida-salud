@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Administracion;
 
+use App\Http\Middleware\VerificarCuentaActiva;
 use App\Models\Medico;
 use App\Models\Rol;
 use App\Models\Usuario;
@@ -161,17 +162,35 @@ class GestionarUsuariosTest extends TestCase
         $this->assertDatabaseHas('bitacora', ['accion' => 'DESACTIVAR', 'registro_id' => $recep->id]);
     }
 
+    public function test_la_sesion_de_una_cuenta_desactivada_se_cierra_en_la_siguiente_peticion(): void
+    {
+        $recep = Usuario::buscarPorLogin('recep1');
+
+        // recep1 tiene una sesión abierta y el administrador desactiva su cuenta
+        $this->flushSession()->actingAs($recep)->get('/menu')->assertOk();
+        $recep->actualizarEstado('desactivar');
+        $recep->refresh();
+
+        $this->get('/menu')
+            ->assertRedirect('/login')
+            ->assertSessionHas('error', 'Su cuenta fue desactivada. Comuníquese con la clínica.');
+        $this->assertGuest();
+        $this->assertDatabaseHas('bitacora', ['accion' => 'SESION_CERRADA', 'usuario_id' => $recep->id]);
+    }
+
     public function test_no_desactiva_su_propia_cuenta_ni_al_unico_administrador(): void
     {
         $this->patch("/usuarios/{$this->admin->id}/estado", ['accion' => 'desactivar'])
             ->assertSessionHasErrors(['accion' => 'No puede desactivar su propia cuenta mientras tiene la sesión abierta.']);
 
-        // otra cuenta de administrador (inactiva, para que admin siga siendo el único activo) intenta desactivarlo
+        // Regla de respaldo: otra cuenta de administrador (inactiva, para que admin siga siendo el único activo)
+        // intenta desactivarlo. En uso real VerificarCuentaActiva ya cerraría esa sesión; se omite solo ese
+        // middleware para comprobar que el Form Request también lo impide.
         $otroAdmin = Usuario::crear([
             'nombre_usuario' => 'admin2', 'correo' => 'admin2@vidasalud.com', 'clave' => 'Admin2#2026',
             'rol_id' => Rol::obtener(Rol::ADMINISTRADOR)->id, 'estado' => false,
         ]);
-        $this->flushSession()->actingAs($otroAdmin)->patch("/usuarios/{$this->admin->id}/estado", ['accion' => 'desactivar'])
+        $this->withoutMiddleware(VerificarCuentaActiva::class)->flushSession()->actingAs($otroAdmin)->patch("/usuarios/{$this->admin->id}/estado", ['accion' => 'desactivar'])
             ->assertSessionHasErrors(['accion' => 'No se puede desactivar al único administrador activo.']);
 
         $this->assertTrue($this->admin->fresh()->estado);

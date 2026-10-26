@@ -41,6 +41,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo1.md` con su implementaci�
 | Plantilla (barra superior por rol, mensajes) | `resources/views/plantilla.blade.php` | todas las vistas | `IniciarSesionTest` |
 | Opciones del menú por rol | `config/menu.php` | plantilla, `menu`, `portal` | `IniciarSesionTest` |
 | Roles autorizados (RNF03, RN12) | `app/Http/Middleware/VerificarRol.php` (`rol:`) | rutas internas | `IniciarSesionTest::test_paciente_va_al_portal_con_su_ci` |
+| Cuenta desactivada (CU03) | `app/Http/Middleware/VerificarCuentaActiva.php` (grupo `web`) | todas las peticiones con sesión | `GestionarUsuariosTest::test_la_sesion_de_una_cuenta_desactivada_se_cierra_en_la_siguiente_peticion` |
 | Contraseña temporal (RN23) | `app/Http/Middleware/VerificarClaveTemporal.php` (`clave.temporal`) | rutas internas | `CambiarClaveTest::test_ingreso_con_clave_temporal_lleva_a_cambiar_y_bloquea_otras_opciones` |
 | Cierre de las demás sesiones (CU26, CU27) | `auth.session` de Laravel (`AuthenticateSession`) en las rutas internas | compara el hash de la contraseña guardado en la sesión | `CambiarClaveTest::test_las_demas_sesiones_abiertas_se_cierran` |
 | Sin caché (CU02) | `app/Http/Middleware/SinCache.php` (`sin.cache`) | rutas internas | `CerrarSesionTest::test_paginas_internas_no_se_guardan_en_cache` |
