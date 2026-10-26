@@ -3,6 +3,7 @@
 use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
+use App\Http\Controllers\Administracion\CtrlBitacora;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
@@ -77,4 +78,9 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::put('/usuarios/{usuario}', [CtrlUsuarios::class, 'update'])->name('usuarios.update');
     Route::post('/usuarios/{usuario}/restablecer-clave', [CtrlUsuarios::class, 'restablecerClave'])->name('usuarios.restablecerClave');
     Route::patch('/usuarios/{usuario}/estado', [CtrlUsuarios::class, 'cambiarEstado'])->name('usuarios.cambiarEstado');
+
+    // CU04 – Consultar bitácora: UI_Bitacora (V.bitacora) → CtrlBitacora (solo lectura)
+    Route::get('/bitacora', [CtrlBitacora::class, 'index'])->name('bitacora.index');
+    Route::get('/bitacora/filtrar', [CtrlBitacora::class, 'filtrar'])->name('bitacora.filtrar');
+    Route::get('/bitacora/exportar', [CtrlBitacora::class, 'exportar'])->name('bitacora.exportar');
 });

@@ -71,5 +71,10 @@ return [
         'medico_id'                => 'el médico vinculado',
         'puede_marcar_atendida'    => 'el permiso para marcar citas atendidas',
         'accion'                   => 'la acción',
+        // CU04
+        'usuario_id'               => 'el usuario',
+        'desde'                    => 'la fecha inicial',
+        'hasta'                    => 'la fecha final',
+        'modulo'                   => 'el módulo',
     ],
 ];
