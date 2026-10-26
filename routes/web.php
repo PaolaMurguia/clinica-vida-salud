@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
+use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
@@ -131,4 +132,12 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // CU09 – Buscar paciente: UI_BuscarPaciente (V.buscarPaciente) → CtrlPacientes@buscar y @show
     Route::get('/pacientes/buscar', [CtrlPacientes::class, 'buscar'])->name('pacientes.buscar');
     Route::get('/pacientes/{paciente}', [CtrlPacientes::class, 'show'])->whereNumber('paciente')->name('pacientes.show');
+});
+
+// --- Paciente (solo su propia información, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Paciente'])->group(function () {
+    // CU11 – Gestionar perfil del paciente: UI_Perfil (V.perfil) → CtrlPerfil
+    Route::get('/perfil', [CtrlPerfil::class, 'show'])->name('perfil.show');
+    Route::put('/perfil', [CtrlPerfil::class, 'update'])->name('perfil.update');
+    Route::post('/perfil/antecedentes', [CtrlPerfil::class, 'storeAntecedente'])->name('perfil.storeAntecedente');
 });

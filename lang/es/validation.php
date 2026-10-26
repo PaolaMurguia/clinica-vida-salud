@@ -105,5 +105,10 @@ return [
         'contacto_emerg_tel'       => 'el teléfono del contacto de emergencia',
         // CU10
         'acepta_privacidad'        => 'la política de privacidad',
+        // CU11
+        'notif_correo'             => 'la preferencia de correo',
+        'notif_alerta'             => 'la preferencia de alertas',
+        'tipo_sangre'              => 'el tipo de sangre',
+        'tipo'                     => 'el tipo de antecedente',
     ],
 ];
