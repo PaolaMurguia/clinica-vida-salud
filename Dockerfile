@@ -53,6 +53,22 @@ RUN mkdir -p storage/logs storage/framework/cache/data storage/framework/session
     && sed -i 's/\r$//' docker/entrypoint.sh \
     && chmod +x docker/entrypoint.sh
 
+# Valores por defecto de producción. En el contenedor no hay .env: sin estos valores Laravel usaría
+# sesiones y caché en tablas que este esquema no tiene (error 500). Las variables de Render los reemplazan.
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    APP_LOCALE=es \
+    APP_FALLBACK_LOCALE=es \
+    APP_TIMEZONE=America/La_Paz \
+    DB_CONNECTION=pgsql \
+    SESSION_DRIVER=file \
+    SESSION_SECURE_COOKIE=true \
+    CACHE_STORE=file \
+    QUEUE_CONNECTION=sync \
+    LOG_CHANNEL=stderr \
+    LOG_LEVEL=debug \
+    MAIL_MAILER=log
+
 # Render indica el puerto en la variable PORT; el entrypoint configura Apache con ese valor
 EXPOSE 8080
 
