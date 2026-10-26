@@ -82,5 +82,14 @@ return [
         'costo_consulta'           => 'el costo de la consulta',
         'edad_minima'              => 'la edad mínima',
         'edad_maxima'              => 'la edad máxima',
+        // CU06
+        'ci'                       => 'el CI',
+        'nro_registro_prof'        => 'el número de registro profesional',
+        'nombres'                  => 'los nombres',
+        'apellidos'                => 'los apellidos',
+        'telefono'                 => 'el teléfono',
+        'especialidades'           => 'las especialidades',
+        'especialidades.*'         => 'la especialidad',
+        'criterio'                 => 'el criterio de búsqueda',
     ],
 ];

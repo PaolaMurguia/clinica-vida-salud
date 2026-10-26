@@ -167,7 +167,9 @@ class ModelosTest extends TestCase
         $medico = Medico::crear([
             'ci' => '5009001', 'nro_registro_prof' => 'RP-2001', 'nombres' => 'Óscar', 'apellidos' => 'Núñez',
         ]);
-        $this->assertSame('M-0007', $medico->codigo);
+        // la secuencia no se revierte entre pruebas: se comprueba el formato del código generado
+        $this->assertMatchesRegularExpression('/^M-\d{4}$/', $medico->codigo);
+        $this->assertGreaterThan('M-0006', $medico->codigo);
         $this->assertTrue(Medico::existeCI('5009001'));
         $this->assertFalse(Medico::existeCI('5009001', $medico->id));
 
@@ -211,7 +213,8 @@ class ModelosTest extends TestCase
         $nuevo = Paciente::crear([
             'ci' => '9998887', 'nombres' => 'Ana', 'apellidos' => 'Rivas', 'fecha_nacimiento' => '2000-01-01', 'telefono' => '70000000',
         ]);
-        $this->assertSame('P-0011', $nuevo->codigo);
+        $this->assertMatchesRegularExpression('/^P-\d{4}$/', $nuevo->codigo);
+        $this->assertGreaterThan('P-0010', $nuevo->codigo);
         $nuevo->desactivar();
         $this->assertFalse($nuevo->fresh()->estado);
     }

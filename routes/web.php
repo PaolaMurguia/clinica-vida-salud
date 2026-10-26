@@ -5,6 +5,7 @@ use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use App\Http\Controllers\Administracion\CtrlBitacora;
 use App\Http\Controllers\Administracion\CtrlEspecialidades;
+use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
@@ -90,4 +91,11 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::post('/especialidades', [CtrlEspecialidades::class, 'store'])->name('especialidades.store');
     Route::put('/especialidades/{especialidad}', [CtrlEspecialidades::class, 'update'])->name('especialidades.update');
     Route::patch('/especialidades/{especialidad}/estado', [CtrlEspecialidades::class, 'cambiarEstado'])->name('especialidades.cambiarEstado');
+
+    // CU06 – Gestionar médicos: UI_Medicos (V.medicos) → CtrlMedicos
+    Route::get('/medicos', [CtrlMedicos::class, 'index'])->name('medicos.index');
+    Route::get('/medicos/buscar', [CtrlMedicos::class, 'buscar'])->name('medicos.buscar');
+    Route::post('/medicos', [CtrlMedicos::class, 'store'])->name('medicos.store');
+    Route::put('/medicos/{medico}', [CtrlMedicos::class, 'update'])->name('medicos.update');
+    Route::patch('/medicos/{medico}/estado', [CtrlMedicos::class, 'cambiarEstado'])->name('medicos.cambiarEstado');
 });
