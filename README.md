@@ -1,59 +1,122 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Clínica Vida Salud – Sistema de gestión de citas médicas
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Examen Parcial II – Sistemas 1. Aplicación web en **Laravel 12** con **PostgreSQL**, Blade y Bootstrap 5.
+Este documento cubre el **ciclo 1** (casos de uso CU01 a CU13, CU26 y CU27).
 
-## About Laravel
+## Requisitos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Herramienta | Versión | Notas |
+|---|---|---|
+| PHP | 8.2 o superior | Con las extensiones `pdo_pgsql`, `pgsql`, `mbstring`, `openssl`, `fileinfo` y `zip` habilitadas (en XAMPP: quitar el `;` de `extension=pdo_pgsql` y `extension=pgsql` en `php.ini`). |
+| Composer | 2.x | |
+| Node.js | 22 | Incluye `npm`. |
+| PostgreSQL | 15 o superior | Las migraciones crean las extensiones `btree_gist`, `pgcrypto` y `unaccent`: use el usuario `postgres` u otro con permiso para crearlas. |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Para comprobar PHP: `php -v` y `php -m` (deben aparecer `pdo_pgsql` y `pgsql`).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Instalación paso a paso
 
-## Learning Laravel
+1. **Clonar el repositorio** y entrar a la carpeta:
+   ```bash
+   git clone https://github.com/PaolaMurguia/clinica-vida-salud.git
+   cd clinica-vida-salud
+   git checkout desarrollo
+   ```
+2. **Dependencias de PHP:**
+   ```bash
+   composer install
+   ```
+3. **Dependencias de JavaScript y compilación de estilos y scripts** (Bootstrap 5 + Sass con Vite):
+   ```bash
+   npm install
+   npm run build
+   ```
+4. **Archivo de entorno:** copiar `.env.example` a `.env` y generar la clave de la aplicación.
+   ```bash
+   cp .env.example .env          # en Windows (cmd): copy .env.example .env
+   php artisan key:generate
+   ```
+   Luego, en `.env`, completar el usuario y la contraseña de PostgreSQL:
+   ```
+   DB_USERNAME=postgres
+   DB_PASSWORD=su_contraseña
+   ```
+   El resto ya está configurado: base `clinica_vida_salud` en `127.0.0.1:5432`, idioma español, zona horaria `America/La_Paz` y correo en modo `log` (los correos de recuperación de contraseña quedan en `storage/logs/laravel.log`).
+5. **Crear las bases de datos** (la segunda la usan solo las pruebas automáticas):
+   ```bash
+   psql -U postgres -c "CREATE DATABASE clinica_vida_salud ENCODING 'UTF8' TEMPLATE template0"
+   psql -U postgres -c "CREATE DATABASE clinica_vida_salud_test ENCODING 'UTF8' TEMPLATE template0"
+   ```
+   (También se pueden crear desde pgAdmin con codificación UTF8.)
+6. **Crear las tablas y cargar los datos de prueba.** Las migraciones ejecutan `database/sql/01_esquema.sql`, `02_funciones.sql` y `03_procedimientos.sql`, y el seeder ejecuta `04_poblacion.sql`:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+7. **Iniciar el servidor** y abrir <http://localhost:8000>:
+   ```bash
+   php artisan serve
+   ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Pruebas automáticas
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+php artisan test
+```
 
-## Laravel Sponsors
+Las pruebas usan **solo** la base `clinica_vida_salud_test` (configurada en `phpunit.xml`) y nunca tocan `clinica_vida_salud`. Si la configuración apunta a otra base, se detienen con un aviso (si aparece, ejecutar `php artisan config:clear`).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Usuarios de prueba
 
-### Premium Partners
+Todos usan la contraseña **`Clinica#2026`**.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Rol | Usuario | Observación |
+|---|---|---|
+| Administrador | `admin` | |
+| Recepcionista | `recep1` | |
+| Recepcionista | `recep2` | Contraseña temporal: al ingresar debe cambiarla (CU26). |
+| Médico | `dr.perez` | Medicina general (puede marcar citas atendidas). |
+| Médico | `dra.mendoza` | Pediatría. |
+| Médico | `dra.justiniano` | Geriatría (puede marcar citas atendidas). |
+| Paciente | `1234567` | María López Vargas (el usuario de un paciente es su CI). |
+| Paciente | `4567890` | Luis Fernández Cuéllar. |
 
-## Contributing
+También se puede ingresar con el correo de la cuenta, por ejemplo `admin@vidasalud.com`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Casos de uso implementados (ciclo 1)
 
-## Code of Conduct
+| CU | Nombre | Módulo | Roles |
+|---|---|---|---|
+| CU01 | Iniciar sesión (bloqueo progresivo de 5, 15 y 60 minutos) | Acceso | Todos |
+| CU02 | Cerrar sesión | Acceso | Todos |
+| CU03 | Gestionar usuarios y roles | Administración | Administrador |
+| CU04 | Consultar bitácora (filtros y exportación a CSV) | Administración | Administrador |
+| CU05 | Gestionar especialidades | Administración | Administrador |
+| CU06 | Gestionar médicos | Administración | Administrador |
+| CU07 | Definir horarios de atención | Administración | Administrador |
+| CU08 | Gestionar pacientes | Pacientes | Recepcionista, Administrador |
+| CU09 | Buscar paciente | Pacientes | Recepcionista, Administrador |
+| CU10 | Registrarse como paciente | Pacientes | Visitante |
+| CU11 | Gestionar perfil del paciente | Pacientes | Paciente |
+| CU12 | Registrar seguro del paciente | Pacientes | Recepcionista |
+| CU13 | Consultar disponibilidad | Disponibilidad | Recepcionista, Paciente |
+| CU26 | Cambiar contraseña | Acceso | Todos |
+| CU27 | Recuperar contraseña (enlace de un solo uso por correo) | Acceso | Todos |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Documentación del proyecto
 
-## Security Vulnerabilities
+- `docs/casos_de_uso_ciclo1.md`: casos de uso, reglas del negocio y requisitos no funcionales (fuente de verdad de los nombres).
+- `docs/trazabilidad_ciclo1.md`: relación CU → vista → controlador → métodos → modelos → ruta → prueba.
+- `docs/diferencias_con_documento.md`: decisiones y diferencias con el documento de casos de uso.
+- `database/sql/`: esquema, funciones, procedimientos, población y consultas de referencia.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Estructura principal
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+app/Http/Controllers/{Acceso,Administracion,Pacientes,Disponibilidad}   controladores por módulo
+app/Http/Requests/{Acceso,Administracion,Pacientes,Disponibilidad}      validación en el servidor (Form Requests)
+app/Models                                                              22 modelos Eloquent
+app/Services/ServicioBitacora.php                                       auditoría centralizada
+resources/views                                                         vistas Blade (planas)
+resources/js/validaciones.js                                            validación en el navegador
+tests/Feature/{Acceso,Administracion,Pacientes,Disponibilidad}          pruebas por módulo
+```
