@@ -48,6 +48,29 @@ Los controladores tienen exactamente los métodos del documento: `CtrlUsuarios` 
 | CU07 | Reactivar un horario (B6) solo se permite si no se superpone con otro activo. | Lo exige la restricción EXCLUDE `ex_horario_no_solapado`. | Aplicado. |
 | CU03–CU07 | Desactivar un médico con citas futuras no muestra advertencias. | B4: se aplazó al ciclo 2. | Sin cambios. |
 
+## Revisión del paso 5 (Pacientes)
+
+Los controladores tienen exactamente los métodos del documento: `CtrlPacientes` (index, store, update, destroy, buscar, show), `CtrlRegistro` (registrar), `CtrlPerfil` (show, update, storeAntecedente) y `CtrlSeguros` (index, store, destroy). Las vistas son `pacientes`, `buscarPaciente`, `registro`, `perfil` y `seguro`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU08 | Un paciente desactivado no se puede reactivar desde el sistema. | El documento solo define `destroy()` / `desactivar()`; B6 habla de `cambiarEstado()` en los demás módulos. | **Para decidir.** |
+| CU08, CU10 | El sexo es obligatorio en los formularios, aunque la columna admite nulos. | Los dos CU lo piden entre los datos del paciente. | Aplicado. |
+| CU08, CU10, CU11 | El CI de pacientes usa el mismo formato aprobado para médicos (5 a 12 dígitos con extensión opcional). | Coherencia con la aprobación del paso 4. | Aplicado. |
+| CU08 | Con un CI duplicado, el mensaje muestra el código y el nombre del paciente existente («Ya existe el paciente P-0001 – …»). | Excepción 1: «muestra al paciente existente». `existeCI()` y `buscarPorCI()` se usan en el Form Request. | Aplicado. |
+| CU09 | Con más de 50 coincidencias no se muestra la lista, solo el aviso para precisar la búsqueda. | Excepción 3. | Aplicado. |
+| CU09 | Desde el paciente seleccionado se puede editar sus datos (CU08) y, para la recepcionista, ir a su seguro (CU12). Citas, historial y resultados llegan con el ciclo 2. | Paso 4 y postcondición. | Aplicado. |
+| CU10 | El registro pide contacto de madre, padre o tutor si quien se registra es menor de 18 años. | B10 de `CLAUDE.md`; el formulario del documento no lo menciona. | Aplicado. |
+| CU10 | Los apellidos se comparan sin distinguir mayúsculas, tildes ni espacios repetidos. Una ficha inactiva se trata como «los datos no coinciden: acuda a recepción». | Paso 5 y excepción 2. | Aplicado. |
+| CU10 | Al vincular una ficha existente, se marca la aceptación de privacidad y se completa el correo si la ficha no tenía. Usa `Paciente::actualizar()` y `Usuario::buscarPorLogin()`, que no figuran en la tabla de CU10. | Son métodos del documento (CU08 y CU01). | Aplicado. |
+| CU10 | `Usuario::crear()` ahora recarga el registro después de guardarlo. | Sin eso, la cuenta recién creada no tenía en memoria los valores por defecto (`estado`) y `VerificarCuentaActiva` cerraba la sesión. Lo detectó una prueba. | Aplicado. |
+| CU11 | El tipo de sangre se declara una sola vez; si ya está registrado, el paciente no lo cambia (lo cambia la clínica). | El documento no dice quién lo corrige; así se evita que el paciente sobrescriba un dato de la clínica. | **Para decidir.** |
+| CU11 | El paciente declara solo los cuatro tipos del paso 4: alergia, enfermedad crónica, medicamento y antecedente familiar. «Cirugía» y «Otro» quedan para el médico. | Paso 4. | Aplicado. |
+| CU11 | El correo del perfil y el de la cuenta se mantienen iguales (`Usuario::actualizarCorreo()`). La preferencia de privacidad es la casilla `acepta_privacidad`. | Pasos 3 y 5. | Aplicado. |
+| CU11 | Intentar enviar CI, nombres, apellidos o fecha de nacimiento devuelve el error «Solo la recepción puede cambiar…». | Excepción 2. | Aplicado. |
+| CU12 | Solo la recepcionista registra seguros; el administrador no tiene acceso. | Actor del documento: Recepcionista (A1 da al administrador el CRUD de pacientes, no el de seguros). | **Para decidir.** |
+| CU12 | La póliza duplicada se busca sin distinguir mayúsculas, con una consulta de Eloquent en el Form Request (el documento no tiene un método para eso). | Excepción 1 y B13. | Aplicado. |
+
 ## Nombres que no están en el documento (aprobados por la autora)
 
 | Elemento | Nombre | Motivo |
