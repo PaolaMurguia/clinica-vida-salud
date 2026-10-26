@@ -8,6 +8,7 @@ use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
+use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
@@ -145,6 +146,16 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // scopeBindings: el seguro debe pertenecer al paciente de la ruta
     Route::delete('/pacientes/{paciente}/seguro/{seguro}', [CtrlSeguros::class, 'destroy'])
         ->whereNumber(['paciente', 'seguro'])->scopeBindings()->name('seguros.destroy');
+});
+
+// =====================================================================
+// Módulo Disponibilidad: CU13 (Recepcionista y Paciente)
+// =====================================================================
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Paciente'])->group(function () {
+    // CU13 – Consultar disponibilidad: UI_Disponibilidad (V.disponibilidad) → CtrlDisponibilidad
+    Route::get('/disponibilidad', [CtrlDisponibilidad::class, 'especialidades'])->name('disponibilidad.especialidades');
+    Route::get('/disponibilidad/medicos', [CtrlDisponibilidad::class, 'medicos'])->name('disponibilidad.medicos');
+    Route::get('/disponibilidad/franjas', [CtrlDisponibilidad::class, 'franjas'])->name('disponibilidad.franjas');
 });
 
 // --- Paciente (solo su propia información, RN18) ---

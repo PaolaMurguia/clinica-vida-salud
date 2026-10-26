@@ -67,6 +67,9 @@
                     @if (Route::has('seguros.index') && auth()->user()->rol->nombre === 'Recepcionista')
                         <a href="{{ route('seguros.index', $seleccionado) }}" class="btn btn-sm btn-outline-primary">Seguro</a>
                     @endif
+                    @if (Route::has('disponibilidad.especialidades') && auth()->user()->rol->nombre === 'Recepcionista' && $seleccionado->estado)
+                        <a href="{{ route('disponibilidad.especialidades', ['paciente_id' => $seleccionado->id]) }}" class="btn btn-sm btn-outline-primary">Disponibilidad</a>
+                    @endif
                 </div>
             </div>
             <dl class="row mt-3 mb-0">

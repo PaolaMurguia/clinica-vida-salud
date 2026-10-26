@@ -117,5 +117,9 @@ return [
         'porcentaje_cobertura'     => 'el porcentaje de cobertura',
         'fecha_inicio'             => 'la fecha de inicio',
         'fecha_fin'                => 'la fecha de fin',
+        // CU13
+        'paciente_id'              => 'el paciente',
+        'especialidad_id'          => 'la especialidad',
+        'fecha'                    => 'la fecha',
     ],
 ];
