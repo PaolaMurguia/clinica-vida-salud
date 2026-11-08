@@ -13,6 +13,22 @@
 @endphp
 <h1 class="h3 mb-3">Médicos</h1>
 
+@if (session('citasFuturas'))
+    {{-- B4 (ciclo 2): advertencia de citas futuras al desactivar; se exige confirmar --}}
+    @php $aviso = session('citasFuturas'); @endphp
+    <div class="alert alert-warning">
+        <p class="fw-semibold mb-1">Hay {{ count($aviso['citas']) }} cita(s) futuras con {{ $aviso['descripcion'] }}:</p>
+        <ul class="small mb-2">@foreach ($aviso['citas'] as $cita)<li>{{ $cita }}</li>@endforeach</ul>
+        <p class="small mb-2">Las citas no se cancelan solas: la recepción debe reprogramarlas o cancelarlas.</p>
+        <form method="POST" action="{{ $aviso['accion'] }}">
+            @csrf @method('PATCH')
+            <input type="hidden" name="accion" value="desactivar">
+            <input type="hidden" name="confirmar" value="1">
+            <button type="submit" class="btn btn-warning btn-sm">Confirmar la desactivación</button>
+        </form>
+    </div>
+@endif
+
 <div class="row g-4">
     {{-- crear() / editar() --}}
     <div class="col-lg-4">

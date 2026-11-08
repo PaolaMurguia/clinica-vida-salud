@@ -117,3 +117,4 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementaci�
 | Envío de notificaciones (D3, D4) | `Notificacion::enviarPendientes()` (aprobado) | comando, bandeja y avisos inmediatos | `ProgramarCitaTest::test_el_comando_envia_los_correos_vencidos_y_registra_los_fallos` |
 | Comando `notificaciones:enviar` (D4) | `routes/console.php` (closure) | recordatorios vencidos | ídem |
 | Bandeja de notificaciones (D5) | `routes/web.php` (closure `notificaciones`), `resources/views/notificaciones.blade.php`, contador en `plantilla` | avisos del canal Sistema de cada usuario | `ProgramarCitaTest::test_la_bandeja_muestra_los_avisos_y_los_marca_como_leidos` |
+| Advertencia de citas futuras al desactivar (B4, CU06 y CU07) | `CtrlMedicos@cambiarEstado`, `CtrlHorarios@cambiarEstado` (`Cita::listarAgenda()`, `confirmar`), aviso en `medicos` y `horarios` | desactivar con citas futuras | `Administracion/AdvertenciaCitasFuturasTest` (4) |

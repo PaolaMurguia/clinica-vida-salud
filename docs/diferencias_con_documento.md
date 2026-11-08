@@ -46,7 +46,7 @@ Los controladores tienen exactamente los métodos del documento: `CtrlUsuarios` 
 | CU06 | Al editar se conservan las especialidades ya asignadas aunque hoy estén inactivas; no se pueden agregar especialidades inactivas nuevas. | Evita que la sincronización (B5) quite una especialidad solo por estar inactiva. | Aplicado. |
 | CU07 | `formHorario` se incluye dentro de `horarios`, y las franjas del horario recién guardado se muestran en un aviso. Cada horario de la lista muestra también sus franjas. | V.horarios y V.formHorario del documento; paso 4. | Aplicado. |
 | CU07 | Reactivar un horario (B6) solo se permite si no se superpone con otro activo. | Lo exige la restricción EXCLUDE `ex_horario_no_solapado`. | Aplicado. |
-| CU03–CU07 | Desactivar un médico con citas futuras no muestra advertencias. | B4: se aplazó al ciclo 2. | Sin cambios. |
+| CU03–CU07 | Desactivar un médico con citas futuras no mostraba advertencias. | B4: se aplazó al ciclo 2. | Resuelto en el ciclo 2 para CU06 y CU07 (ver «B4 – Advertencia de citas futuras»). |
 
 ## Revisión del paso 5 (Pacientes)
 
@@ -304,3 +304,13 @@ Usa `CtrlHistoriaClinica@storeAtencion` y `RegistroAtencion::crear()`, como la t
 | CU23 | Sin datos: la pantalla lo informa y no muestra los botones de exportar; exportar sin datos vuelve con el aviso y no genera archivo. Si falla la exportación, vuelve al reporte en pantalla con un mensaje sin detalles internos. | Excepciones 2 y 3. | Aplicado. |
 | CU23 | Ningún reporte incluye diagnósticos ni datos clínicos; los pacientes muestran código, nombre, CI, edad y estado. | RN18. | Aplicado; probado. |
 | CU23 | `composer audit` informa avisos de seguridad en paquetes Symfony que ya estaban instalados (no en dompdf). | No se actualizaron dependencias fuera del alcance del CU. | Pendiente: actualizar con `composer update symfony/*` en un paso aparte. |
+
+### B4 – Advertencia de citas futuras al desactivar (CU06 y CU07)
+
+Aprobado por la autora al iniciar el ciclo 2: solo para médicos (CU06) y horarios (CU07), con confirmación como en CU24. Sin métodos nuevos: `cambiarEstado()` de `CtrlMedicos` y `CtrlHorarios` usa `Cita::listarAgenda()` (tabla de CU18).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU06 | Desactivar un médico con citas futuras Programadas o Confirmadas (próximos 2 años) muestra la lista y el botón «Confirmar la desactivación» (`confirmar=1`); al confirmar se avisa que la recepción debe reprogramarlas o cancelarlas. Las citas no cambian. | B4. | Aplicado; `Administracion/AdvertenciaCitasFuturasTest`. |
+| CU07 | Igual para un horario: cuentan las citas futuras del médico en ese día de la semana y dentro de sus horas. | B4. | Aplicado. |
+| CU05, CU06, CU07 | `CambiarEstadoRequest` acepta `confirmar` (booleano opcional); en especialidades (CU05) no se usa. Dos pruebas del ciclo 1 (`GestionarMedicosTest`, `DefinirHorariosTest`) ahora envían `confirmar=1`, porque Pérez tiene una cita futura en la población. | Cambio de comportamiento aprobado. | Aplicado. |

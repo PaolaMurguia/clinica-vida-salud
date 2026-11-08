@@ -68,7 +68,7 @@ Las decisiones D1 a D13 fueron aprobadas por la autora al iniciar el ciclo 2.
 - **Bandeja de notificaciones (D5)**: vista `V.notificaciones`, publicada con una ruta closure (sin controlador), como la validación del enlace de CU27.
 - **Comando `notificaciones:enviar` (D4)**: closure en `routes/console.php`, sin clase.
 - **Traductor de errores de la base de datos (D1, RNF08)**: en `bootstrap/app.php` (`withExceptions`). Convierte los errores de los triggers (RAISE EXCEPTION) y de las restricciones EXCLUDE, UNIQUE y CHECK en mensajes claros, sin detalles internos.
-- **Advertencia al desactivar (B4 del ciclo 1)**: se implementa al final del ciclo 2, solo para médicos (CU06) y horarios (CU07), con confirmación como en CU24.
+- **Advertencia al desactivar (B4 del ciclo 1)**: implementada al final del ciclo 2, solo para médicos (CU06) y horarios (CU07), con confirmación como en CU24. Excepción que se agrega a CU06 y CU07 en el Word: «El médico (o el horario) tiene citas futuras: el sistema las muestra y exige confirmar; las citas no se cancelan solas».
 
 ---
 

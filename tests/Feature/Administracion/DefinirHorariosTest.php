@@ -102,7 +102,8 @@ class DefinirHorariosTest extends TestCase
     {
         $lunes = Horario::where('medico_id', $this->perez->id)->where('dia_semana', 1)->first();
 
-        $this->patch("/horarios/{$lunes->id}/estado", ['accion' => 'desactivar'])->assertSessionHas('exito', 'Horario desactivado.');
+        // el lunes de Pérez tiene una cita futura: desde el ciclo 2 (B4) se confirma la desactivación
+        $this->patch("/horarios/{$lunes->id}/estado", ['accion' => 'desactivar', 'confirmar' => 1])->assertSessionHas('exito', 'Horario desactivado.');
         $this->assertFalse($lunes->fresh()->estado);
 
         // para «cambiarlo», se agrega otro en el mismo día

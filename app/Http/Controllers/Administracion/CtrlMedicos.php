@@ -8,6 +8,7 @@ use App\Http\Requests\Administracion\CambiarEstadoRequest;
 use App\Http\Requests\Administracion\StoreMedicoRequest;
 use App\Http\Requests\Administracion\UpdateMedicoRequest;
 use App\Models\Atiende;
+use App\Models\Cita;
 use App\Models\Especialidad;
 use App\Models\Medico;
 use App\Services\ServicioBitacora;
@@ -81,12 +82,30 @@ class CtrlMedicos extends Controller
     public function cambiarEstado(CambiarEstadoRequest $request, Medico $medico): RedirectResponse
     {
         $activar = $request->validated('accion') === 'activar';
+
+        // B4 (ciclo 2): con citas futuras se advierte y se exige confirmar; las citas no se cancelan solas
+        $citas = $activar ? collect() : Cita::listarAgenda($medico->id, today(), today()->addYears(2))
+            ->whereIn('estado', Cita::VIGENTES)->values();
+        if ($citas->isNotEmpty() && ! $request->boolean('confirmar')) {
+            return redirect()->route('medicos.index')->with('citasFuturas', [
+                'accion'      => route('medicos.cambiarEstado', $medico),
+                'descripcion' => "el médico {$medico->apellidos}, {$medico->nombres}",
+                'citas'       => $citas->map(fn (Cita $cita) => "{$cita->fecha->format('d/m/Y')} " . substr($cita->hora_inicio, 0, 5)
+                    . " · {$cita->codigo} · {$cita->paciente->apellidos}, {$cita->paciente->nombres} ({$cita->estado})")->all(),
+            ]);
+        }
+
         $medico->cambiarEstado($activar);
 
         ServicioBitacora::registrar(ServicioBitacora::ACCION, $activar ? 'ACTIVAR' : 'DESACTIVAR', 'Médicos', $medico->id,
-            ($activar ? 'Activación' : 'Desactivación') . " del médico {$medico->codigo}");
+            ($activar ? 'Activación' : 'Desactivación') . " del médico {$medico->codigo}"
+            . ($citas->isNotEmpty() ? " con {$citas->count()} cita(s) futuras" : ''));
 
-        return redirect()->route('medicos.index')->with('exito', "Médico {$medico->codigo} " . ($activar ? 'activado.' : 'desactivado.'));
+        $respuesta = redirect()->route('medicos.index')->with('exito', "Médico {$medico->codigo} " . ($activar ? 'activado.' : 'desactivado.'));
+
+        return $citas->isNotEmpty()
+            ? $respuesta->with('aviso', "El médico tiene {$citas->count()} cita(s) futuras: la recepción debe reprogramarlas o cancelarlas (CU15, CU16).")
+            : $respuesta;
     }
 
     /**

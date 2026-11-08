@@ -124,7 +124,8 @@ class GestionarMedicosTest extends TestCase
         $perez = Medico::where('nro_registro_prof', 'RP-1001')->first();
         $citas = $perez->citas()->count();
 
-        $this->patch("/medicos/{$perez->id}/estado", ['accion' => 'desactivar'])->assertSessionHasNoErrors();
+        // Pérez tiene citas futuras: desde el ciclo 2 (B4) se confirma la desactivación
+        $this->patch("/medicos/{$perez->id}/estado", ['accion' => 'desactivar', 'confirmar' => 1])->assertSessionHasNoErrors();
         $this->assertFalse($perez->fresh()->estado);
         $this->assertSame($citas, $perez->citas()->count());
         $this->assertNotContains($perez->id, Medico::listarPorEspecialidad($this->idEsp('Medicina general'))->pluck('id'));
