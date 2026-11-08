@@ -56,6 +56,8 @@ class StoreAtencionRequest extends FormRequest
             'talla_cm'         => ['nullable', 'numeric', "between:$tallaMin,$tallaMax"],
             'presion_arterial' => ['nullable', 'regex:/^\d{2,3}\/\d{2,3}$/'],
             'temperatura_c'    => ['nullable', 'numeric', "between:$tempMin,$tempMax"],
+            // CU21: el navegador marca si se usó el dictado por voz; el texto se valida igual
+            'dictado_voz'      => ['nullable', 'boolean'],
         ];
     }
 
@@ -79,6 +81,7 @@ class StoreAtencionRequest extends FormRequest
             $valor = trim((string) $this->input($campo));
             $this->merge([$campo => $valor === '' ? null : $valor]);
         }
+        $this->merge(['dictado_voz' => $this->boolean('dictado_voz')]);
     }
 
     public function after(): array

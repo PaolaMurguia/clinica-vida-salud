@@ -26,11 +26,14 @@
 
 @if ($mostrarFormulario)
     {{-- registrarAtencion(): pasos 3 a 5 --}}
-    <form method="POST" class="card card-body shadow-sm border-0 mb-4" data-validar novalidate id="formAtencion"
+    {{-- CU21: data-dictado agrega «Dictar» / «Detener» a los campos data-dictable (resources/js/dictado.js) --}}
+    <form method="POST" class="card card-body shadow-sm border-0 mb-4" data-validar data-dictado novalidate id="formAtencion"
           action="{{ $formulario ? route('historiaClinica.updateAtencion', $formulario) : route('historiaClinica.storeAtencion', $paciente) }}">
         @csrf
         @if ($formulario) @method('PUT') @endif
+        <input type="hidden" name="dictado_voz" value="{{ old('dictado_voz', '0') }}">
         <h2 class="h5">{{ $formulario ? 'Modificar la atención de la cita ' . $formulario->cita->codigo : 'Registrar atención' }}</h2>
+        <div data-dictado-aviso hidden></div>
 
         @unless ($formulario)
             <div class="mb-3">

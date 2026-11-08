@@ -72,6 +72,8 @@ class CtrlHistoriaClinica extends Controller
     /**
      * CU20 – Gestionar historia clínica (pasos 3 a 5 y 8, registrarAtencion): guarda el único registro de
      * atención de la cita atendida y actualiza la fecha de modificación de la historia clínica.
+     * CU21 – Dictar registro clínico por voz (paso 5): el texto dictado se valida igual que el escrito y el
+     * registro queda marcado como dictado por voz (el audio no se guarda).
      */
     public function storeAtencion(StoreAtencionRequest $request, Paciente $paciente): RedirectResponse
     {
@@ -84,8 +86,13 @@ class CtrlHistoriaClinica extends Controller
             return $registro;
         });
 
+        $codigo = Cita::obtener($registro->cita_id)->codigo;
         ServicioBitacora::registrar(ServicioBitacora::ACCION, 'CREAR', 'Historia clínica', $registro->id,
-            "Registro de atención de la cita " . Cita::obtener($registro->cita_id)->codigo . " del paciente {$paciente->codigo}");
+            "Registro de atención de la cita $codigo del paciente {$paciente->codigo}");
+        if ($registro->dictado_voz) {
+            ServicioBitacora::registrar(ServicioBitacora::ACCION, 'DICTADO_VOZ', 'Historia clínica', $registro->id,
+                "Registro de atención de la cita $codigo dictado por voz");
+        }
 
         return redirect()->route('historiaClinica.show', $paciente)->with('exito', 'Atención registrada.');
     }
@@ -99,7 +106,10 @@ class CtrlHistoriaClinica extends Controller
         $cita = Cita::obtener($registro->cita_id);
 
         DB::transaction(function () use ($registro, $request, $cita) {
-            $registro->actualizar($request->validated());
+            // CU21: si alguna vez se dictó, el registro sigue marcado como dictado por voz
+            $datos = $request->validated();
+            $datos['dictado_voz'] = $registro->dictado_voz || ! empty($datos['dictado_voz']);
+            $registro->actualizar($datos);
             Historia::obtener($cita->paciente_id)->update(['fecha_actualizacion' => now()]);
         });
 

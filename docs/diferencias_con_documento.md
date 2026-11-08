@@ -278,3 +278,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU22 | Si el examen tiene cita, la notificación «Resultado» se asocia a ella; si no, va sin cita. | La columna `notificacion.cita_id` es opcional. | Aplicado. |
 | CU22 | Form Request `Clinica/StoreExamenRequest` (solo un médico que atiende al paciente, RN20 y RN18). marcarRevisado() no tiene Form Request (no recibe datos); valida en el controlador y responde con un mensaje. | Convención de CU03 (`restablecerClave()`). | Aplicado. |
 | CU22 | Se agregó «Laboratorio» al menú de la recepcionista y del médico, y «Mis resultados» al portal. | Acceso a la vista. | Aplicado. |
+
+### CU21 – Dictar registro clínico por voz
+
+Usa `CtrlHistoriaClinica@storeAtencion` y `RegistroAtencion::crear()`, como la tabla de CU21. Las operaciones dictar() y detener() de `V.historiaClinica` están en `resources/js/dictado.js` (Web Speech API del navegador; el audio no sale del navegador ni se guarda).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU21 | El dictado agrega el texto reconocido a lo que ya había en el campo y marca el campo oculto `dictado_voz=1`. Idioma `es-BO`. | Pasos 3 y 5. | Aplicado. |
+| CU21 | Mensajes por excepción: navegador sin soporte (se ocultan los botones y se indica usar el teclado), permiso denegado, voz no reconocida (se puede reintentar), sin micrófono y falla de conexión; el formulario sigue funcionando con el teclado. Si el texto supera la longitud del campo se avisa en pantalla y el servidor lo rechaza al guardar. | Excepciones 1 a 5. | Aplicado; prueba manual en el navegador. |
+| CU21 | `updateAtencion()` también acepta `dictado_voz`; la marca se conserva una vez puesta (un registro dictado sigue figurando como dictado). | El documento solo nombra storeAtencion(); así no se pierde la marca al corregir. | Aplicado. |
+| CU21 | Además de la acción `CREAR`, la bitácora registra `DICTADO_VOZ` cuando el registro se dictó (como en `04_poblacion.sql`). | Paso 5 y datos de prueba. | Aplicado. |
+| CU21 | Las pruebas automáticas cubren el servidor; el reconocimiento de voz se prueba a mano (Chrome o Edge con micrófono). | El navegador de las pruebas de Laravel no ejecuta JavaScript. | Pendiente de la prueba manual de la autora. |
