@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,16 @@ class Cita extends Model
 {
     protected $table = 'cita';
     public $timestamps = false;
+
+    public const ESTADOS = ['Programada', 'Confirmada', 'Atendida', 'Cancelada', 'Inasistencia'];
+
+    /** Estados en los que la cita todavía se puede reprogramar, cancelar o cambiar (CU15, CU16, CU17). */
+    public const VIGENTES = ['Programada', 'Confirmada'];
+
+    /** RN17: horas mínimas de anticipación para que el paciente cancele o reprograme desde el portal. */
+    public const PLAZO_PACIENTE_HORAS = 2;
+
+    public const POR_PAGINA = 20;
 
     protected $fillable = [
         'paciente_id', 'medico_id', 'especialidad_id', 'usuario_registro_id', 'fecha', 'hora_inicio',
@@ -108,6 +119,22 @@ class Cita extends Model
             ->where('hora_fin', '>', $horaInicio)
             ->when($exceptoId, fn ($q) => $q->where('id', '<>', $exceptoId))
             ->exists();
+    }
+
+    /**
+     * CU19: citas del paciente de la más reciente a la más antigua, con filtros opcionales
+     * de estado y rango de fechas (incluye pasadas, canceladas e inasistencias, RN10).
+     */
+    public static function listarPorPaciente(int $pacienteId, array $filtros = []): LengthAwarePaginator
+    {
+        return self::with(['medico', 'especialidad'])
+            ->where('paciente_id', $pacienteId)
+            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
+            ->when($filtros['desde'] ?? null, fn ($q, $desde) => $q->whereDate('fecha', '>=', $desde))
+            ->when($filtros['hasta'] ?? null, fn ($q, $hasta) => $q->whereDate('fecha', '<=', $hasta))
+            ->orderByDesc('fecha')->orderByDesc('hora_inicio')
+            ->paginate(self::POR_PAGINA)
+            ->withQueryString();
     }
 
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */

@@ -163,3 +163,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU14 | El contador de la bandeja cuenta los avisos del canal Sistema ya vencidos y en estado Pendiente; al abrir la bandeja pasan a Enviado (equivale a leídos). | La tabla no tiene una columna de lectura; no se agregan columnas. | Aplicado. |
 | CU14 | Un correo inmediato se envía al confirmar la transacción (`DB::afterCommit`), no dentro de ella. | Si la transacción se revierte, no se envía un aviso falso. | Aplicado. |
 | CU14 | El traductor de errores (bootstrap/app.php) muestra el texto de los RAISE EXCEPTION de los triggers (ya redactados para el usuario) y un mensaje por nombre de restricción para EXCLUDE, UNIQUE y CHECK; vuelve a la página anterior con los datos ingresados. | D1, RNF08. | Aplicado. |
+
+### CU19 – Consultar historial de citas
+
+`CtrlHistorialCitas` tiene exactamente index() y show(). Vista `historialCitas` (mostrar, filtrar y verDetalle en la misma vista).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU19 | Una sola ruta para el personal y el paciente: `GET /historial-citas?paciente_id=`. El paciente no envía `paciente_id` (se usa el suyo); si envía el de otra persona se rechaza (RN18). | Paso 1: «Mis citas» del paciente y el historial abierto desde CU09. | Aplicado. |
+| CU19 | El detalle (show) usa `Cita::obtener()`, de la tabla de CU15/CU16. Un paciente que abre una cita ajena recibe 403. | Paso 4; RN18. | Aplicado. |
+| CU19 | Form Request `Citas/FiltrarHistorialCitasRequest` (como `FiltrarBitacoraRequest` de CU04). El rango de fechas no tiene límite de días. | El documento solo pide rechazar el rango invertido. | Aplicado. |
+| CU19 | Paginación de 20 citas por página. | Pacientes con muchas citas. | Aplicado. |
+| CU19 | Los botones «Reprogramar» y «Cancelar» aparecen solo para la recepcionista y el paciente, en citas Programadas o Confirmadas; para el paciente, solo si faltan al menos 2 horas (si no, el aviso de RN17). El administrador solo consulta. | Paso 5; actores de CU15 y CU16. Los botones se activan cuando existen las rutas de CU15 y CU16. | Aplicado. |

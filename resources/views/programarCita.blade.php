@@ -38,7 +38,7 @@
     </div>
     <div class="mt-3 d-print-none d-flex flex-wrap gap-2">
         @if (Route::has('historialCitas.index'))
-            <a href="{{ auth()->user()->paciente_id ? route('historialCitas.index') : route('historialCitas.index', ['paciente' => $cita->paciente_id]) }}"
+            <a href="{{ auth()->user()->paciente_id ? route('historialCitas.index') : route('historialCitas.index', ['paciente_id' => $cita->paciente_id]) }}"
                class="btn btn-primary">Ver historial de citas</a>
         @endif
         <a href="{{ route('disponibilidad.especialidades', ['paciente_id' => $cita->paciente_id]) }}" class="btn btn-outline-primary">Programar otra cita</a>

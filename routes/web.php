@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Citas\CtrlCitas;
+use App\Http\Controllers\Citas\CtrlHistorialCitas;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
@@ -194,4 +195,12 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // mostrar() → CtrlCitas@create (también el comprobante con ?cita=) · programar() → CtrlCitas@store
     Route::get('/citas/programar', [CtrlCitas::class, 'create'])->name('citas.create');
     Route::post('/citas', [CtrlCitas::class, 'store'])->name('citas.store');
+});
+
+// --- Recepcionista, Administrador y Paciente (el paciente solo su propio historial, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Administrador,Paciente'])->group(function () {
+    // CU19 – Consultar historial de citas: UI_HistorialCitas (V.historialCitas)
+    // mostrar() y filtrar() → CtrlHistorialCitas@index (?paciente_id=, estado, desde, hasta) · verDetalle() → @show
+    Route::get('/historial-citas', [CtrlHistorialCitas::class, 'index'])->name('historialCitas.index');
+    Route::get('/historial-citas/{cita}', [CtrlHistorialCitas::class, 'show'])->whereNumber('cita')->name('historialCitas.show');
 });
