@@ -88,4 +88,31 @@ class Cita extends Model
             ->orderBy('hora_inicio')
             ->get(['hora_inicio', 'hora_fin']);
     }
+
+    /** CU15, CU16, CU17, CU20, CU25: obtiene la cita con sus datos principales. */
+    public static function obtener(int $id): self
+    {
+        return self::with(['paciente', 'medico', 'especialidad'])->findOrFail($id);
+    }
+
+    /**
+     * CU14, CU15: indica si otra cita no cancelada del médico se superpone con el rango (RN07, RN09).
+     * $exceptoId excluye la propia cita al reprogramar.
+     */
+    public static function existeConflicto(int $medicoId, Carbon $fecha, string $horaInicio, string $horaFin, ?int $exceptoId = null): bool
+    {
+        return self::where('medico_id', $medicoId)
+            ->whereDate('fecha', $fecha->toDateString())
+            ->where('estado', '<>', 'Cancelada')
+            ->where('hora_inicio', '<', $horaFin)
+            ->where('hora_fin', '>', $horaInicio)
+            ->when($exceptoId, fn ($q) => $q->where('id', '<>', $exceptoId))
+            ->exists();
+    }
+
+    /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
+    public static function crear(array $datos): self
+    {
+        return self::create($datos + ['estado' => 'Programada'])->refresh();
+    }
 }

@@ -108,7 +108,9 @@
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     @foreach ($resultado['franjas'] as $franja)
                         @if ($franja['estado'] === 'libre')
-                            <span class="btn btn-outline-success disabled-link" title="Libre">{{ $franja['inicio'] }}–{{ $franja['fin'] }}</span>
+                            {{-- CU14: una franja libre se elige para programar la cita --}}
+                            <a href="{{ route('citas.create', $base + ['especialidad_id' => $especialidad->id, 'medico_id' => $medico->id, 'fecha' => $fecha->toDateString(), 'hora_inicio' => $franja['inicio']]) }}"
+                               class="btn btn-outline-success" title="Libre: programar cita">{{ $franja['inicio'] }}–{{ $franja['fin'] }}</a>
                         @else
                             {{-- ocupada: sin datos del paciente que la tiene --}}
                             <span class="btn btn-light text-muted border" title="Ocupada"><s>{{ $franja['inicio'] }}–{{ $franja['fin'] }}</s> Ocupada</span>

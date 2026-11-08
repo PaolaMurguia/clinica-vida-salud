@@ -29,4 +29,19 @@ class HistorialCita extends Model
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
     }
+
+    /**
+     * CU14, CU15, CU16, CU17: registra un cambio de la cita con el usuario responsable,
+     * el estado anterior, el nuevo y una observación (motivo o nueva fecha).
+     */
+    public static function registrar(Cita $cita, ?string $estadoAnterior, string $estadoNuevo, ?string $observacion = null, ?int $usuarioId = null): self
+    {
+        return self::create([
+            'cita_id'         => $cita->id,
+            'usuario_id'      => $usuarioId ?? auth()->id(),
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo'    => $estadoNuevo,
+            'observacion'     => $observacion !== null ? mb_substr($observacion, 0, 200) : null,
+        ]);
+    }
 }

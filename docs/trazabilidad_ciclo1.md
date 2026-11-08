@@ -58,7 +58,8 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 |---|---|---|---|---|
 | 1 | Registrar un paciente nuevo | 1 | `Pacientes/GestionarPacientesTest::test_registra_un_paciente_con_codigo` | ✅ |
 | 2 | Registrar un paciente con CI duplicado | 1 | `Pacientes/GestionarPacientesTest::test_rechaza_un_ci_duplicado_y_muestra_el_paciente_existente` | ✅ |
-| 3–8 | Programar, superponer, reservar fuera de horario y cancelar citas; historial del paciente; citas de un médico por fecha | 2 | — (CU14 en adelante) | ⬜ ciclo 2 |
+| 3–5 | Programar una cita; cita superpuesta; reservar fuera de horario | 2 | `Citas/ProgramarCitaTest::test_la_recepcionista_programa_una_cita_y_ve_el_comprobante`, `test_franja_ya_ocupada`, `test_franja_fuera_del_horario_o_con_duracion_invalida` | ✅ |
+| 6–8 | Cancelar citas; historial del paciente; citas de un médico por fecha | 2 | — (CU16, CU19, CU18) | ⬜ ciclo 2 |
 | 9 | Ingresar a una página interna sin iniciar sesión | 1 | `Acceso/IniciarSesionTest::test_pagina_interna_sin_sesion_lleva_al_login`, `Pacientes/GestionarPacientesTest::test_pagina_interna_sin_sesion` | ✅ |
 | 10 | Ejecutar una operación con datos inválidos | 1 | `Acceso/IniciarSesionTest::test_campos_vacios_rechazados_en_el_servidor`, `Pacientes/GestionarPacientesTest::test_campos_obligatorios_vacios_y_formatos` (además, cada CU prueba sus validaciones) | ✅ |
 
@@ -80,3 +81,37 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 | Proxy de Render y https forzado en producción | `bootstrap/app.php` (`trustProxies`), `app/Providers/AppServiceProvider.php` (`URL::forceScheme`) | RNF15 |
 | Logs en el panel de Render (enlace de CU27 en modo `log`) | `LOG_CHANNEL=stderr`, `MAIL_MAILER=log` | CU27, RNF08 |
 | Variables de entorno sin claves reales | `README.md`, sección «Despliegue en Render» | — |
+
+---
+
+# Trazabilidad del ciclo 2
+
+Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementación. Orden aplicado: CU14, CU19, CU16, CU15, CU17, CU18, CU25, CU24, CU20, CU22, CU21, CU23.
+
+**Último CU cerrado:** CU14.
+
+## Resumen por caso de uso
+
+| CU | Nombre | Módulo | Vista | Controlador → métodos | Modelos → métodos | Ruta | Test | Estado |
+|---|---|---|---|---|---|---|---|---|
+| CU14 | Programar cita | Citas | `programarCita` (resumen y comprobante con `?cita=`); franjas libres de `disponibilidad` enlazadas | `Citas\CtrlCitas` → create(), store() ✅ | `Paciente` → obtener() ✅ · `Especialidad` → listarPorEdad() ✅ · `Medico` → obtener() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `Cita` → existeConflicto(), crear() ✅ (+ obtener() de CU15 para el comprobante) · `HistorialCita` → registrar() ✅ · `Notificacion` → programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/programar` (`citas.create`), `POST /citas` (`citas.store`) | `Citas/ProgramarCitaTest` (19) | ✅ |
+| CU15 | Reprogramar cita | Citas | | | | | | ⬜ |
+| CU16 | Cancelar cita | Citas | | | | | | ⬜ |
+| CU17 | Registrar asistencia | Citas | | | | | | ⬜ |
+| CU18 | Consultar agenda médica | Citas | | | | | | ⬜ |
+| CU19 | Consultar historial de citas | Citas | | | | | | ⬜ |
+| CU20 | Gestionar historia clínica | Clinica | | | | | | ⬜ |
+| CU21 | Dictar registro clínico por voz | Clinica | | | | | | ⬜ |
+| CU22 | Gestionar resultados de laboratorio | Clinica | | | | | | ⬜ |
+| CU23 | Generar reportes | Administracion | | | | | | ⬜ |
+| CU24 | Gestionar feriados y bloqueos | Administracion | | | | | | ⬜ |
+| CU25 | Registrar pago de consulta | Pagos | | | | | | ⬜ |
+
+## Base común del ciclo 2
+
+| Elemento | Archivo | Uso | Test |
+|---|---|---|---|
+| Traductor de errores de la BD (D1, RNF08) | `bootstrap/app.php` (`withExceptions`, `QueryException`) | triggers (P0001), EXCLUDE (23P01), UNIQUE (23505), CHECK (23514), FK (23503) → mensaje claro | `ProgramarCitaTest::test_los_errores_de_los_triggers_se_muestran_sin_detalles_internos` |
+| Envío de notificaciones (D3, D4) | `Notificacion::enviarPendientes()` (aprobado) | comando, bandeja y avisos inmediatos | `ProgramarCitaTest::test_el_comando_envia_los_correos_vencidos_y_registra_los_fallos` |
+| Comando `notificaciones:enviar` (D4) | `routes/console.php` (closure) | recordatorios vencidos | ídem |
+| Bandeja de notificaciones (D5) | `routes/web.php` (closure `notificaciones`), `resources/views/notificaciones.blade.php`, contador en `plantilla` | avisos del canal Sistema de cada usuario | `ProgramarCitaTest::test_la_bandeja_muestra_los_avisos_y_los_marca_como_leidos` |

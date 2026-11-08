@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Controllers\Citas;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Citas\CreateCitaRequest;
+use App\Http\Requests\Citas\StoreCitaRequest;
+use App\Models\Cita;
+use App\Models\Especialidad;
+use App\Models\HistorialCita;
+use App\Models\Horario;
+use App\Models\Medico;
+use App\Models\Notificacion;
+use App\Models\Paciente;
+use App\Services\ServicioBitacora;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+
+/**
+ * Control CtrlCitas: CU14 – Programar cita, CU15 – Reprogramar cita, CU16 – Cancelar cita
+ * y CU17 – Registrar asistencia.
+ */
+class CtrlCitas extends Controller
+{
+    /**
+     * CU14 – Programar cita (pasos 2 y 3, mostrar): resumen de la franja elegida en la disponibilidad
+     * con la modalidad y el motivo. Con ?cita={id} muestra el comprobante de la cita registrada (paso 9).
+     */
+    public function create(CreateCitaRequest $request): View
+    {
+        if ($request->has('cita')) {
+            $cita = Cita::obtener((int) $request->validated('cita'));
+            // RN18: el paciente solo ve sus propias citas
+            abort_if($request->user()->paciente_id !== null && $cita->paciente_id !== $request->user()->paciente_id, 403);
+
+            return view('programarCita', ['cita' => $cita]);
+        }
+
+        $datos = $request->validated();
+        $fecha = Carbon::createFromFormat('Y-m-d', $datos['fecha'])->startOfDay();
+        $paciente = Paciente::obtener((int) $datos['paciente_id']);
+        $medico = Medico::obtener((int) $datos['medico_id']);
+
+        return view('programarCita', [
+            'cita'         => null,
+            'paciente'     => $paciente,
+            'especialidad' => Especialidad::listarPorEdad((int) $paciente->fecha_nacimiento->diffInYears($fecha))
+                ->firstWhere('id', (int) $datos['especialidad_id']),
+            'medico'       => $medico,
+            'fecha'        => $fecha,
+            'franja'       => Horario::obtenerDelDia($medico->id, $fecha)
+                ->flatMap(fn (Horario $horario) => $horario->generarFranjas())
+                ->firstWhere('inicio', $datos['hora_inicio']),
+        ]);
+    }
+
+    /**
+     * CU14 – Programar cita (pasos 5 a 9, programar): dentro de una transacción vuelve a verificar la
+     * franja, guarda la cita Programada, su estado inicial, el recordatorio y los avisos, y muestra el
+     * comprobante. Si otro usuario ocupó la franja, vuelve a mostrar la disponibilidad (D2).
+     */
+    public function store(StoreCitaRequest $request): RedirectResponse
+    {
+        $datos = $request->validated();
+        $usuario = $request->user();
+        $fecha = Carbon::createFromFormat('Y-m-d', $datos['fecha'])->startOfDay();
+        $paciente = Paciente::obtener((int) $datos['paciente_id']);
+        $medico = Medico::obtener((int) $datos['medico_id']);
+
+        try {
+            $cita = DB::transaction(function () use ($datos, $usuario, $fecha, $paciente, $medico) {
+                // paso 5: la franja del horario del médico (RN05, RN08) y sin superposición (RN07, RN13)
+                $franja = Horario::obtenerDelDia($medico->id, $fecha)
+                    ->flatMap(fn (Horario $horario) => $horario->generarFranjas())
+                    ->firstWhere('inicio', $datos['hora_inicio']);
+                if (! $franja || Cita::existeConflicto($medico->id, $fecha, $franja['inicio'], $franja['fin'])) {
+                    return null;   // la franja dejó de estar libre entre la validación y la transacción
+                }
+
+                $cita = Cita::crear([
+                    'paciente_id'         => $paciente->id,
+                    'medico_id'           => $medico->id,
+                    'especialidad_id'     => (int) $datos['especialidad_id'],
+                    'usuario_registro_id' => $usuario->id,
+                    'fecha'               => $fecha->toDateString(),
+                    'hora_inicio'         => $franja['inicio'],
+                    'hora_fin'            => $franja['fin'],
+                    'modalidad'           => $datos['modalidad'],
+                    'canal'               => $usuario->paciente_id !== null ? 'Web' : 'Recepcion',
+                    'motivo'              => $datos['motivo'] ?? null,
+                ]);
+
+                // paso 7: estado inicial
+                HistorialCita::registrar($cita, null, 'Programada', 'Cita registrada');
+
+                // paso 8: confirmación y recordatorio al paciente, aviso en la agenda del médico (RN21, RF21)
+                $cuando = $cita->fecha->format('d/m/Y') . ' a las ' . substr($cita->hora_inicio, 0, 5);
+                $conQuien = "con {$medico->nombres} {$medico->apellidos} ({$cita->especialidad->nombre})";
+                if ($paciente->usuario) {
+                    Notificacion::programar($paciente->usuario, 'Confirmacion',
+                        "Su cita {$cita->codigo} $conQuien quedó programada para el $cuando.", $cita);
+                    Notificacion::programar($paciente->usuario, 'Recordatorio',
+                        "Recuerde su cita {$cita->codigo} $conQuien el $cuando.", $cita,
+                        $fecha->copy()->setTimeFromTimeString($cita->hora_inicio)->subDay());
+                }
+                if ($medico->usuario) {
+                    Notificacion::programar($medico->usuario, 'Agenda',
+                        "Nueva cita {$cita->codigo} el $cuando: {$paciente->nombres} {$paciente->apellidos} ({$cita->especialidad->nombre}).", $cita);
+                }
+
+                return $cita;
+            });
+        } catch (QueryException $e) {
+            // D2: la restricción ex_cita_no_solapada rechazó la inserción (otro usuario ganó la franja)
+            if (($e->errorInfo[0] ?? null) !== '23P01') {
+                throw $e;
+            }
+            report($e);
+            $cita = null;
+        }
+
+        if ($cita === null) {
+            return redirect()->route('disponibilidad.franjas', [
+                'paciente_id'     => $paciente->id,
+                'especialidad_id' => $datos['especialidad_id'],
+                'medico_id'       => $medico->id,
+                'fecha'           => $fecha->toDateString(),
+            ])->with('error', 'La franja ya fue ocupada por otro usuario. Elija otra franja libre.');
+        }
+
+        ServicioBitacora::registrar(ServicioBitacora::ACCION, 'CREAR', 'Citas', $cita->id,
+            "Cita {$cita->codigo} del paciente {$paciente->codigo} con el médico {$medico->codigo} el {$cita->fecha->format('d/m/Y')} " . substr($cita->hora_inicio, 0, 5));
+
+        return redirect()->route('citas.create', ['cita' => $cita->id])
+            ->with('exito', "Cita {$cita->codigo} programada.");
+    }
+}

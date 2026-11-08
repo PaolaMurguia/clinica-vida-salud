@@ -22,12 +22,12 @@ return [
         'Recepcionista' => [
             ['texto' => 'Pacientes',       'ruta' => 'pacientes.index',               'descripcion' => 'Registro de pacientes (CU08)'],
             ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',              'descripcion' => 'Por CI, nombre o apellido (CU09)'],
-            ['texto' => 'Disponibilidad',  'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres de los médicos (CU13)'],
+            ['texto' => 'Disponibilidad',  'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y programar cita (CU13, CU14)'],
         ],
         'Médico' => [],
         'Paciente' => [
             ['texto' => 'Mi perfil',      'ruta' => 'perfil.show',                   'descripcion' => 'Datos, antecedentes y preferencias (CU11)'],
-            ['texto' => 'Disponibilidad', 'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres para reservar (CU13)'],
+            ['texto' => 'Disponibilidad', 'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y reservar una cita (CU13, CU14)'],
         ],
     ],
 ];

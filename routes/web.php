@@ -8,17 +8,19 @@ use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
+use App\Http\Controllers\Citas\CtrlCitas;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
 use App\Http\Controllers\Pacientes\CtrlSeguros;
+use App\Models\Notificacion;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Rutas web del ciclo 1, agrupadas por módulo
+| Rutas web de los ciclos 1 y 2, agrupadas por módulo
 |--------------------------------------------------------------------------
 | Middlewares (bootstrap/app.php):
 |  - guest          sin sesión; con sesión abierta lleva al menú o al portal (CU01)
@@ -74,6 +76,22 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal'])->grou
     // CU01, paso 9: menú principal (B1) para el personal y portal para el paciente
     Route::view('/menu', 'menu')->middleware('rol:Administrador,Recepcionista,Médico')->name('menu');
     Route::view('/portal', 'portal')->middleware('rol:Paciente')->name('portal');
+
+    // D5 – Bandeja de notificaciones (todos los roles; closure aprobada por la autora, sin controlador).
+    // D4: al abrirla se envían las notificaciones vencidas y las del canal Sistema del usuario pasan a Enviado.
+    Route::get('/notificaciones', function () {
+        $usuarioId = auth()->id();
+        Notificacion::enviarPendientes($usuarioId);
+
+        return view('notificaciones', [
+            'notificaciones' => Notificacion::where('usuario_id', $usuarioId)
+                ->where('canal', 'Sistema')
+                ->where('estado', '<>', 'Anulado')
+                ->where('fecha_programada', '<=', now())
+                ->orderByDesc('fecha_programada')
+                ->paginate(20),
+        ]);
+    })->name('notificaciones');
 });
 
 // =====================================================================
@@ -164,4 +182,16 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:P
     Route::get('/perfil', [CtrlPerfil::class, 'show'])->name('perfil.show');
     Route::put('/perfil', [CtrlPerfil::class, 'update'])->name('perfil.update');
     Route::post('/perfil/antecedentes', [CtrlPerfil::class, 'storeAntecedente'])->name('perfil.storeAntecedente');
+});
+
+// =====================================================================
+// Módulo Citas (ciclo 2): CU14, CU15, CU16, CU17, CU18, CU19
+// =====================================================================
+
+// --- Recepcionista y Paciente (el paciente solo con sus propias citas, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Paciente'])->group(function () {
+    // CU14 – Programar cita: UI_ProgramarCita (V.programarCita)
+    // mostrar() → CtrlCitas@create (también el comprobante con ?cita=) · programar() → CtrlCitas@store
+    Route::get('/citas/programar', [CtrlCitas::class, 'create'])->name('citas.create');
+    Route::post('/citas', [CtrlCitas::class, 'store'])->name('citas.store');
 });

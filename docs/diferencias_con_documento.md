@@ -92,7 +92,7 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 | CU13 | La recepcionista consulta para el paciente seleccionado en CU09 (botón «Disponibilidad»); sin paciente, la vista pide seleccionarlo. Un paciente siempre consulta para sí mismo, aunque envíe otro `paciente_id` (RN18). | Paso 1: las especialidades dependen de la edad del paciente (RN15). | Aplicado. |
 | CU13 | En el paso 1 la edad se calcula a hoy; al consultar franjas se usa la edad en la fecha elegida. | RN15: «edad del paciente en la fecha de la cita». | Aplicado. |
 | CU13 | El médico se obtiene con `Medico::listarPorEspecialidad()` y la especialidad con `Especialidad::listarPorEdad()` (los métodos de la tabla de CU13), no con `obtener()`. | Fidelidad con la tabla de clases de CU13. | Aplicado. |
-| CU13 | Las franjas pasadas del día no se muestran; las ocupadas se muestran como «Ocupada», sin datos de la cita ni del paciente. Las franjas libres no son seleccionables todavía. | Pasos 5 y 6; programar la cita es CU14 (ciclo 2). | Aplicado. |
+| CU13 | Las franjas pasadas del día no se muestran; las ocupadas se muestran como «Ocupada», sin datos de la cita ni del paciente. Desde CU14 (ciclo 2) cada franja libre es un enlace para programar la cita. | Pasos 5 y 6; programar la cita es CU14. | Aplicado (actualizado en CU14). |
 | CU13 | Form Requests `EspecialidadesRequest`, `MedicosRequest` y `FranjasRequest` (`<método>Request`, porque el módulo tiene un solo controlador). | Convención aprobada. | Aplicado. |
 
 ## Nombres que no están en el documento (aprobados por la autora)
@@ -148,4 +148,18 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 
 ## Revisión por caso de uso
 
-(Se completa al cerrar cada CU.)
+### CU14 – Programar cita
+
+`CtrlCitas` tiene solo create() y store() (más adelante, los métodos de CU15, CU16 y CU17). Vista `programarCita`. Todos los métodos de la tabla de clases de CU14 se usan; el cálculo de la franja es una expresión con `Horario::obtenerDelDia()` y `generarFranjas()`, sin métodos nuevos en el controlador.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU14 | El comprobante (paso 9) se muestra en `programarCita` con `GET /citas/programar?cita={id}` (create()). Usa `Cita::obtener()`, que es de la tabla de CU15/CU16. Un paciente solo ve el comprobante de sus citas (403). | El documento no nombra una vista para el comprobante; mismo patrón que `?editar=` (B1). | Aplicado. |
+| CU14 | Form Requests `Citas/CreateCitaRequest` (mostrar) y `StoreCitaRequest` (programar, agrega modalidad y motivo). Las reglas del paso 5 están en el método protegido `validarFranja()` del Form Request, que reutilizará CU15 (con `citaExcluida()`), como `esMenor()` o `reglasMedico()` del ciclo 1. En el Form Request el paciente y el médico se cargan con `find()` (B13) para informar si no existen. | Convención aprobada de Form Requests; B13. | Aplicado. |
+| CU14 | La hora de fin no la envía el navegador: se toma de la franja del horario (RN08). | Evita duraciones manipuladas. | Aplicado. |
+| CU14 | El paciente siempre programa para sí: si no envía `paciente_id` se usa su ficha; si envía el de otra persona, se rechaza con «Solo puede programar citas para usted (RN18)». | Excepción RN18 (en CU13 se reemplazaba en silencio; aquí el documento pide manejar la excepción). | Aplicado. |
+| CU14 | D2: si la restricción `ex_cita_no_solapada` rechaza la inserción (SQLSTATE 23P01), `store()` lleva de nuevo a la disponibilidad del mismo médico y fecha con «La franja ya fue ocupada por otro usuario». | Excepción 1 y D2. | Aplicado; probado con un insert concurrente simulado. |
+| CU14 | Notificaciones: confirmación y recordatorio al paciente, aviso «Agenda» al médico, solo si tienen cuenta. El paciente las recibe por los canales que eligió en su perfil (CU11): `notif_alerta` = bandeja y `notif_correo` = correo; el médico, solo en la bandeja. Si faltan menos de 24 horas para la cita, el recordatorio se programa para el momento. | D3; el documento no fija qué pasa con las preferencias de CU11 ni con citas cercanas. | Aplicado. |
+| CU14 | El contador de la bandeja cuenta los avisos del canal Sistema ya vencidos y en estado Pendiente; al abrir la bandeja pasan a Enviado (equivale a leídos). | La tabla no tiene una columna de lectura; no se agregan columnas. | Aplicado. |
+| CU14 | Un correo inmediato se envía al confirmar la transacción (`DB::afterCommit`), no dentro de ella. | Si la transacción se revierte, no se envía un aviso falso. | Aplicado. |
+| CU14 | El traductor de errores (bootstrap/app.php) muestra el texto de los RAISE EXCEPTION de los triggers (ya redactados para el usuario) y un mensaje por nombre de restricción para EXCLUDE, UNIQUE y CHECK; vuelve a la página anterior con los datos ingresados. | D1, RNF08. | Aplicado. |
