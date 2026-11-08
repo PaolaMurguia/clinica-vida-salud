@@ -1,0 +1,167 @@
+@startuml sd_CU27
+' CU27 – Recuperar contraseña
+' Fuente: routes/web.php (POST /recuperar-clave, GET /recuperar-clave/{token}, POST /restablecer-clave),
+'         CtrlRecuperacion@solicitarEnlace y @restablecer, SolicitarEnlaceRequest, RestablecerRequest,
+'         Usuario, Recuperacion, Bitacora
+title sd CU27 Recuperar contraseña
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Usuario" as U
+boundary "V.recuperarClave" as VR
+control "CtrlRecuperacion" as CR
+entity "M.Usuario" as MU
+entity "M.Recuperacion" as MRC
+entity "M.Bitacora" as MB
+
+activate U
+
+== Pasos 1 a 5: solicitar el enlace ==
+U -> VR : solicitar(login)
+activate VR
+VR -> CR : solicitarEnlace(request)
+activate CR
+note right of CR
+  Middleware guest.
+  SolicitarEnlaceRequest: login obligatorio;
+  recorta espacios.
+end note
+
+CR -> MU : usuario = buscarPorLogin(login)
+activate MU
+MU -->> CR : usuario : ?Usuario
+deactivate MU
+
+alt [cuenta inexistente o inactiva]
+  CR -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, SOLICITUD_RECUPERACION_IGNORADA
+  MB -->> CR : bitacora : Bitacora
+  deactivate MB
+else [cuenta activa]
+  CR -> MRC : n = contarRecientes(usuario.id)
+  activate MRC
+  MRC -->> CR : n : int
+  deactivate MRC
+  alt [n >= 3 (RN22)]
+    CR -> MB : registrar(datos)
+    activate MB
+    note right of MB : ServicioBitacora: ACCION, LIMITE_RECUPERACION
+    MB -->> CR : bitacora : Bitacora
+    deactivate MB
+  else [n < 3]
+    CR -> MRC : token = crear(usuario.id, ip)
+    activate MRC
+    MRC -->> CR : token : string
+    deactivate MRC
+    note right of CR
+      DB::transaction; el trigger trg_limitar_recuperaciones
+      repite el límite (QueryException → LIMITE_RECUPERACION).
+      Mail::raw() envía route('recuperacion.form', token).
+    end note
+    CR -> MB : registrar(datos)
+    activate MB
+    note right of MB
+      ServicioBitacora: ACCION,
+      SOLICITUD_RECUPERACION | ENVIO_CORREO_FALLIDO
+    end note
+    MB -->> CR : bitacora : Bitacora
+    deactivate MB
+  end
+end
+CR -->> VR : back() «Si la cuenta existe, recibirá en su correo un enlace…»
+deactivate CR
+VR -->> U : mismo mensaje, exista o no la cuenta
+deactivate VR
+
+== Paso 6: abrir el enlace ==
+U -> VR : abrir enlace(token)
+activate VR
+note right of VR
+  Ruta GET /recuperar-clave/{token} (closure):
+  llama a validar() sin pasar por CtrlRecuperacion.
+end note
+VR -> MRC : solicitud = validar(token)
+activate MRC
+MRC -->> VR : solicitud : ?Recuperacion
+deactivate MRC
+VR -->> U : formulario (enlaceValido) | aviso y enlace para solicitar otro
+deactivate VR
+
+== Pasos 7 a 9: restablecer ==
+U -> VR : restablecer(token, clave, clave_confirmation)
+activate VR
+VR -> CR : restablecer(request)
+activate CR
+note right of CR
+  RestablecerRequest: token obligatorio,
+  clave confirmed y RNF05.
+end note
+
+CR -> MRC : solicitud = validar(token)
+activate MRC
+MRC -->> CR : solicitud : ?Recuperacion
+deactivate MRC
+
+alt [enlace válido y cuenta activa]
+  note right of CR : DB::transaction
+  CR -> MU : actualizarClave(clave)
+  activate MU
+  deactivate MU
+  CR -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  CR -> MRC : marcarUsado()
+  activate MRC
+  deactivate MRC
+  note right of CR
+    auth.session cierra las sesiones abiertas:
+    el hash de la contraseña ya no coincide.
+  end note
+  CR -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, RESTABLECER_CLAVE
+  MB -->> CR : bitacora : Bitacora
+  deactivate MB
+  CR -->> VR : redirect(login) «Su contraseña fue restablecida…»
+else [enlace vencido, usado o alterado, o cuenta inactiva]
+  CR -->> VR : redirect(recuperacion.form, token)
+end
+deactivate CR
+
+VR -->> U : muestra V.login o el aviso del enlace
+deactivate VR
+deactivate U
+
+@enduml

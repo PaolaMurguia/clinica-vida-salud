@@ -1,0 +1,142 @@
+@startuml sd_CU05
+' CU05 – Gestionar especialidades
+' Fuente: routes/web.php (/especialidades), CtrlEspecialidades@index, @store, @update, @cambiarEstado,
+'         StoreEspecialidadRequest, UpdateEspecialidadRequest, CambiarEstadoRequest, Especialidad, Bitacora
+title sd CU05 Gestionar especialidades
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Administrador" as A
+boundary "V.especialidades" as VE
+control "CtrlEspecialidades" as CE
+entity "M.Especialidad" as ME
+entity "M.Bitacora" as MB
+
+activate A
+note over A, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Administrador.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  A -> VE : mostrar(editar)
+  activate VE
+  VE -> CE : index(request)
+  activate CE
+  CE -> ME : especialidades = listar()
+  activate ME
+  ME -->> CE : especialidades : Collection
+  deactivate ME
+  opt [editar = id (formulario integrado, B1)]
+    CE -> ME : editada = findOrFail(id)
+    activate ME
+    ME -->> CE : editada : Especialidad
+    deactivate ME
+  end
+  CE -->> VE : view('especialidades', especialidades, editada)
+  deactivate CE
+  VE -->> A : lista de especialidades
+  deactivate VE
+end
+
+' ---------------------------------------------------------------- crear
+alt [crear]
+  A -> VE : crear(nombre, descripcion, costo_consulta, edad_minima, edad_maxima)
+  activate VE
+  VE -> CE : store(request)
+  activate CE
+  note right of CE
+    StoreEspecialidadRequest: costo >= 0, mínima <= máxima;
+    after(): Especialidad::existeNombre(nombre) normalizado.
+  end note
+  CE -> ME : especialidad = crear(datos)
+  activate ME
+  ME -->> CE : especialidad : Especialidad
+  deactivate ME
+  CE -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Especialidades
+  MB -->> CE : bitacora : Bitacora
+  deactivate MB
+  CE -->> VE : redirect(especialidades.index) «Especialidad registrada.»
+  deactivate CE
+  VE -->> A : confirmación
+  deactivate VE
+end
+
+' ---------------------------------------------------------------- editar
+alt [editar]
+  A -> VE : editar(especialidad, nombre, descripcion, costo_consulta, edad_minima, edad_maxima)
+  activate VE
+  VE -> CE : update(request, especialidad)
+  activate CE
+  note right of CE : UpdateEspecialidadRequest (mismas reglas, excepto el propio id)
+  CE -> ME : actualizar(datos)
+  activate ME
+  deactivate ME
+  CE -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, MODIFICAR, Especialidades
+  MB -->> CE : bitacora : Bitacora
+  deactivate MB
+  CE -->> VE : redirect(especialidades.index) «Especialidad actualizada.»
+  deactivate CE
+  VE -->> A : confirmación
+  deactivate VE
+end
+
+' ---------------------------------------------------------------- cambiar estado
+alt [cambiar estado]
+  A -> VE : cambiarEstado(especialidad, accion)
+  activate VE
+  VE -> CE : cambiarEstado(request, especialidad)
+  activate CE
+  note right of CE : CambiarEstadoRequest: accion = activar | desactivar
+  CE -> ME : cambiarEstado(activar)
+  activate ME
+  deactivate ME
+  CE -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, ACTIVAR | DESACTIVAR
+  MB -->> CE : bitacora : Bitacora
+  deactivate MB
+  CE -->> VE : redirect(especialidades.index) «Especialidad activada | desactivada.»
+  deactivate CE
+  VE -->> A : confirmación
+  deactivate VE
+end
+
+deactivate A
+
+@enduml

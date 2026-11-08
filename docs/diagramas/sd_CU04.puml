@@ -1,0 +1,128 @@
+@startuml sd_CU04
+' CU04 – Consultar bitácora
+' Fuente: routes/web.php (/bitacora, /bitacora/filtrar, /bitacora/exportar),
+'         CtrlBitacora@index, @filtrar, @exportar, FiltrarBitacoraRequest, Bitacora, Usuario
+title sd CU04 Consultar bitácora
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Administrador" as A
+boundary "V.bitacora" as VB
+control "CtrlBitacora" as CB
+entity "M.Bitacora" as MB
+entity "M.Usuario" as MU
+
+activate A
+note over A, MU
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Administrador.
+  Solo lectura: los registros no se editan ni se eliminan.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  A -> VB : mostrar()
+  activate VB
+  VB -> CB : index()
+  activate CB
+  CB -> MB : registros = listar(20)
+  activate MB
+  MB -->> CB : registros : LengthAwarePaginator
+  deactivate MB
+  CB -> MU : usuarios = listar()
+  activate MU
+  MU -->> CB : usuarios : Collection
+  deactivate MU
+  CB -->> VB : view('bitacora', registros, usuarios, modulos)
+  deactivate CB
+  VB -->> A : registros más recientes
+  deactivate VB
+end
+
+' ---------------------------------------------------------------- filtrar
+alt [filtrar]
+  A -> VB : filtrar(usuario_id, desde, hasta, modulo)
+  activate VB
+  VB -> CB : filtrar(request)
+  activate CB
+  note right of CB
+    FiltrarBitacoraRequest: desde <= hasta y
+    rango máximo de 90 días (B11).
+  end note
+  CB -> MB : consulta = buscar(filtros)
+  activate MB
+  MB -->> CB : consulta : Builder
+  deactivate MB
+  note right of CB : consulta->paginate(20)
+  CB -> MU : usuarios = listar()
+  activate MU
+  MU -->> CB : usuarios : Collection
+  deactivate MU
+  opt [usuario_id indicado]
+    CB -> MU : filtrado = obtener(usuario_id)
+    activate MU
+    MU -->> CB : filtrado : Usuario
+    deactivate MU
+  end
+  CB -->> VB : view('bitacora', registros, usuarios, filtros, filtrado)
+  deactivate CB
+  VB -->> A : resultados paginados o «sin registros»
+  deactivate VB
+end
+
+' ---------------------------------------------------------------- exportar
+alt [exportar]
+  A -> VB : exportar(usuario_id, desde, hasta, modulo)
+  activate VB
+  VB -> CB : exportar(request)
+  activate CB
+  note right of CB : FiltrarBitacoraRequest (mismas reglas)
+  CB -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, EXPORTAR, Bitácora
+  MB -->> CB : bitacora : Bitacora
+  deactivate MB
+  CB -> MB : consulta = buscar(filtros)
+  activate MB
+  MB -->> CB : consulta : Builder
+  deactivate MB
+  note right of CB : CSV con «;» y BOM UTF-8, lazy(500)
+  CB -->> VB : streamDownload(bitacora_AAAAMMDD_HHMMSS.csv)
+  deactivate CB
+  VB -->> A : descarga del CSV
+  deactivate VB
+end
+
+deactivate A
+
+@enduml

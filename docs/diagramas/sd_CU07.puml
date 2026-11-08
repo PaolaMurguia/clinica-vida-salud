@@ -1,0 +1,154 @@
+@startuml sd_CU07
+' CU07 – Definir horarios de atención
+' Fuente: routes/web.php (GET/POST /horarios, PATCH /horarios/{horario}/estado),
+'         CtrlHorarios@index, @store, @cambiarEstado, StoreHorarioRequest, CambiarEstadoRequest,
+'         Medico, Horario, Bitacora; resources/views/horarios.blade.php
+title sd CU07 Definir horarios de atención
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Administrador" as A
+boundary "V.horarios" as VH
+boundary "V.formHorario" as VF
+control "CtrlHorarios" as CH
+entity "M.Medico" as MM
+entity "M.Horario" as MH
+entity "M.Bitacora" as MB
+
+activate A
+note over A, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Administrador.
+  Sin edición de horarios en el ciclo 1 (B3): se desactiva y se agrega otro.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar horarios del médico]
+  A -> VH : mostrar(medico_id)
+  activate VH
+  VH -> CH : index(request)
+  activate CH
+  CH -> MM : medicos = listar()
+  activate MM
+  MM -->> CH : medicos : Collection
+  deactivate MM
+  opt [medico_id indicado]
+    CH -> MM : medico = obtener(medico_id)
+    activate MM
+    MM -->> CH : medico : Medico
+    deactivate MM
+    CH -> MH : horarios = listar(medico.id)
+    activate MH
+    MH -->> CH : horarios : Collection
+    deactivate MH
+  end
+  CH -->> VH : view('horarios', medicos, medico, horarios)
+  deactivate CH
+  loop [por cada horario de la lista]
+    VH -> MH : franjas = generarFranjas()
+    activate MH
+    MH -->> VH : franjas : array
+    deactivate MH
+  end
+  VH -->> A : horarios actuales con sus franjas
+  deactivate VH
+end
+
+' ---------------------------------------------------------------- agregar
+alt [agregar horario]
+  A -> VF : agregar(medico_id, dia_semana, hora_inicio, hora_fin, duracion_cita_min)
+  activate VF
+  VF -> CH : store(request)
+  activate CH
+  note right of CH
+    StoreHorarioRequest: médico activo, hora_fin posterior,
+    duración de 10 a 120 min; after(): franjas completas
+    y Horario::seSuperpone(medico_id, dia, inicio, fin).
+  end note
+  CH -> MH : horario = crear(datos)
+  activate MH
+  MH -->> CH : horario : Horario
+  deactivate MH
+  note right of CH
+    QueryException (CHECK/EXCLUDE de la BD):
+    back() con error, sin registrar.
+  end note
+  CH -> MH : franjas = generarFranjas()
+  activate MH
+  MH -->> CH : franjas : array
+  deactivate MH
+  CH -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Horarios
+  MB -->> CH : bitacora : Bitacora
+  deactivate MB
+  CH -->> VF : redirect(horarios.index, medico_id) con franjas
+  deactivate CH
+  VF -->> A : «Horario registrado: genera N franjas…»
+  deactivate VF
+end
+
+' ---------------------------------------------------------------- cambiar estado
+alt [cambiar estado del horario]
+  A -> VH : cambiarEstado(horario, accion)
+  activate VH
+  VH -> CH : cambiarEstado(request, horario)
+  activate CH
+  note right of CH : CambiarEstadoRequest: accion = activar | desactivar
+  opt [accion = activar (B6)]
+    CH -> MH : choca = seSuperpone(medico_id, dia_semana, hora_inicio, hora_fin, horario.id)
+    activate MH
+    MH -->> CH : choca : bool
+    deactivate MH
+  end
+  alt [choca = true]
+    CH -->> VH : redirect(horarios.index) «No se puede activar: se superpone…»
+  else [sin superposición]
+    CH -> MH : cambiarEstado(activar)
+    activate MH
+    deactivate MH
+    CH -> MB : registrar(datos)
+    activate MB
+    note right of MB : ServicioBitacora: ACCION, ACTIVAR | DESACTIVAR, Horarios
+    MB -->> CH : bitacora : Bitacora
+    deactivate MB
+    CH -->> VH : redirect(horarios.index) «Horario activado | desactivado.»
+  end
+  deactivate CH
+  VH -->> A : lista actualizada o el error
+  deactivate VH
+end
+
+deactivate A
+
+@enduml

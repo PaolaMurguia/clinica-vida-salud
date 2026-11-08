@@ -1,0 +1,130 @@
+@startuml sd_CU01
+' CU01 – Iniciar sesión
+' Fuente: routes/web.php (POST /login), CtrlSesion@autenticar, AutenticarRequest, Usuario, Rol, Bitacora
+title sd CU01 Iniciar sesión
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Usuario" as U
+boundary "V.login" as VL
+control "CtrlSesion" as CS
+entity "M.Usuario" as MU
+entity "M.Rol" as MR
+entity "M.Bitacora" as MB
+
+activate U
+U -> VL : ingresar(login, clave)
+activate VL
+note right of VL : JavaScript: campos no vacíos
+VL -> CS : autenticar(request)
+activate CS
+note right of CS
+  Middleware guest.
+  AutenticarRequest: login y clave
+  obligatorios; recorta espacios.
+end note
+
+CS -> MU : usuario = buscarPorLogin(login)
+activate MU
+MU -->> CS : usuario : ?Usuario
+deactivate MU
+
+alt [credenciales correctas]
+  CS -> MU : ok = verificarClave(clave)
+  activate MU
+  MU -->> CS : true
+  deactivate MU
+  CS -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  CS -> MR : rol = obtener(usuario.rol_id)
+  activate MR
+  MR -->> CS : rol : Rol
+  deactivate MR
+  note right of CS
+    Auth::login(usuario),
+    session()->regenerate(),
+    session('rol', rol.nombre)
+  end note
+  CS -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCESO, LOGIN
+  MB -->> CS : bitacora : Bitacora
+  deactivate MB
+  CS -->> VL : redirect(clave.edit | portal | menu)
+else [contraseña incorrecta]
+  CS -> MU : ok = verificarClave(clave)
+  activate MU
+  MU -->> CS : false
+  deactivate MU
+  CS -> MU : minutosBloqueo = registrarIntentoFallido()
+  activate MU
+  MU -->> CS : minutosBloqueo : ?int
+  deactivate MU
+  CS -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCESO, LOGIN_FALLIDO
+  MB -->> CS : bitacora : Bitacora
+  deactivate MB
+  opt [minutosBloqueo != null (quinto intento: 5, 15 o 60 min)]
+    CS -> MB : registrar(datos)
+    activate MB
+    note right of MB : ServicioBitacora: ACCESO, BLOQUEO_CUENTA
+    MB -->> CS : bitacora : Bitacora
+    deactivate MB
+  end
+  CS -->> VL : back() con mensaje genérico o de bloqueo
+else [cuenta inexistente, inactiva o bloqueada]
+  note right of CS
+    No verifica la contraseña
+    ni suma intento fallido.
+  end note
+  CS -> MB : registrar(datos)
+  activate MB
+  note right of MB
+    ServicioBitacora: ACCESO,
+    LOGIN_FALLIDO | LOGIN_DENEGADO
+    | LOGIN_BLOQUEADO
+  end note
+  MB -->> CS : bitacora : Bitacora
+  deactivate MB
+  CS -->> VL : back() con mensaje genérico, de cuenta inactiva o de tiempo restante
+end
+deactivate CS
+
+VL -->> U : muestra el menú, el portal, «Cambiar contraseña» o el mensaje
+deactivate VL
+deactivate U
+
+@enduml

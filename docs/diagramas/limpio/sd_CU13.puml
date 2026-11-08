@@ -1,0 +1,91 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU13 Consultar disponibilidad
+
+actor "Recepcionista o Paciente" as U
+boundary "V.disponibilidad" as VD
+control "CtrlDisponibilidad" as CD
+entity "M.Paciente" as MP
+entity "M.Especialidad" as ME
+entity "M.Medico" as MM
+entity "M.Bloqueo" as MBQ
+entity "M.Horario" as MH
+entity "M.Cita" as MC
+
+activate U
+== Elegir especialidad ==
+U -> VD : elegirEspecialidad()
+activate VD
+VD -> CD : especialidades(paciente_id)
+deactivate VD
+activate CD
+CD -> MP : paciente = obtener(paciente_id)
+activate MP
+MP -->> CD : paciente
+deactivate MP
+CD -> ME : especialidades = listarPorEdad(edad)
+activate ME
+ME -->> CD : especialidades
+deactivate ME
+CD -> VD : view(especialidades)
+activate VD
+deactivate VD
+deactivate CD
+
+== Elegir médico ==
+U -> VD : elegirMedico(especialidad_id)
+activate VD
+VD -> CD : medicos(especialidad_id)
+deactivate VD
+activate CD
+CD -> MM : medicos = listarPorEspecialidad(especialidad_id)
+activate MM
+MM -->> CD : medicos
+deactivate MM
+CD -> VD : view(medicos)
+activate VD
+deactivate VD
+deactivate CD
+
+== Consultar franjas ==
+U -> VD : consultar(medico_id, fecha)
+activate VD
+VD -> CD : franjas(medico_id, fecha)
+deactivate VD
+activate CD
+CD -> MBQ : bloqueo = estaBloqueada(medico_id, fecha)
+activate MBQ
+MBQ -->> CD : bloqueo
+deactivate MBQ
+
+alt fecha bloqueada
+  CD -> VD : view(motivo)
+  activate VD
+  deactivate VD
+else fecha sin bloqueo
+  CD -> MH : horario = obtenerDelDia(medico_id, fecha)
+  activate MH
+  MH -->> CD : horario
+  deactivate MH
+  CD -> MH : franjas = generarFranjas()
+  activate MH
+  MH -->> CD : franjas
+  deactivate MH
+  CD -> MC : ocupadas = listarOcupadas(medico_id, fecha)
+  activate MC
+  MC -->> CD : ocupadas
+  deactivate MC
+  opt médico no atiende ese día o sin franjas libres
+    CD -> VD : view(siguiente fecha)
+    activate VD
+    deactivate VD
+  end
+  CD -> VD : view(franjas libres y ocupadas)
+  activate VD
+  deactivate VD
+end
+deactivate CD
+deactivate U
+@enduml

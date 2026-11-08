@@ -1,0 +1,91 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU11 Gestionar perfil del paciente
+
+actor "Paciente" as P
+boundary "V.perfil" as VP
+control "CtrlPerfil" as CP
+entity "M.Paciente" as MP
+entity "M.Historia" as MH
+entity "M.Antecedente" as MA
+entity "M.Seguro" as MS
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate P
+alt mostrar
+  P -> VP : mostrar()
+  activate VP
+  VP -> CP : show()
+  deactivate VP
+  activate CP
+  CP -> MP : paciente = obtener(paciente_id)
+  activate MP
+  MP -->> CP : paciente
+  deactivate MP
+  CP -> MH : historia = obtener(paciente_id)
+  activate MH
+  MH -->> CP : historia
+  deactivate MH
+  CP -> MA : antecedentes = listar(historia.id)
+  activate MA
+  MA -->> CP : antecedentes
+  deactivate MA
+  CP -> MS : seguro = obtenerActivo(paciente_id)
+  activate MS
+  MS -->> CP : seguro
+  deactivate MS
+  CP -> VP : view(paciente, antecedentes, seguro)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+
+alt guardar
+  P -> VP : guardar(datos)
+  activate VP
+  VP -> CP : update(datos)
+  deactivate VP
+  activate CP
+  CP -> MP : actualizar(datos)
+  activate MP
+  deactivate MP
+  opt correo distinto
+    CP -> MU : actualizarCorreo(correo)
+    activate MU
+    deactivate MU
+  end
+  CP -> MB : registrar(MODIFICAR)
+  activate MB
+  deactivate MB
+  CP -> VP : view(perfil)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+
+alt declarar antecedente
+  P -> VP : declararAntecedente(datos)
+  activate VP
+  VP -> CP : storeAntecedente(datos)
+  deactivate VP
+  activate CP
+  CP -> MH : historia = obtener(paciente_id)
+  activate MH
+  MH -->> CP : historia
+  deactivate MH
+  CP -> MA : crear(historia.id, datos)
+  activate MA
+  deactivate MA
+  CP -> MB : registrar(DECLARAR_ANTECEDENTE)
+  activate MB
+  deactivate MB
+  CP -> VP : view(perfil)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+deactivate P
+@enduml

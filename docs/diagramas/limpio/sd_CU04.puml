@@ -1,0 +1,71 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU04 Consultar bitácora
+
+actor "Administrador" as A
+boundary "V.bitacora" as VB
+control "CtrlBitacora" as CB
+entity "M.Bitacora" as MB
+entity "M.Usuario" as MU
+
+activate A
+alt mostrar
+  A -> VB : mostrar()
+  activate VB
+  VB -> CB : index()
+  deactivate VB
+  activate CB
+  CB -> MB : registros = listar()
+  activate MB
+  MB -->> CB : registros
+  deactivate MB
+  CB -> VB : view(registros)
+  activate VB
+  deactivate VB
+  deactivate CB
+end
+
+alt filtrar
+  A -> VB : filtrar(filtros)
+  activate VB
+  VB -> CB : filtrar(filtros)
+  deactivate VB
+  activate CB
+  CB -> MB : registros = buscar(filtros)
+  activate MB
+  MB -->> CB : registros
+  deactivate MB
+  opt filtro por usuario
+    CB -> MU : usuario = obtener(usuario_id)
+    activate MU
+    MU -->> CB : usuario
+    deactivate MU
+  end
+  CB -> VB : view(registros, usuario)
+  activate VB
+  deactivate VB
+  deactivate CB
+end
+
+alt exportar
+  A -> VB : exportar(filtros)
+  activate VB
+  VB -> CB : exportar(filtros)
+  deactivate VB
+  activate CB
+  CB -> MB : registros = buscar(filtros)
+  activate MB
+  MB -->> CB : registros
+  deactivate MB
+  CB -> MB : registrar(EXPORTAR)
+  activate MB
+  deactivate MB
+  CB -> VB : view(archivo CSV)
+  activate VB
+  deactivate VB
+  deactivate CB
+end
+deactivate A
+@enduml

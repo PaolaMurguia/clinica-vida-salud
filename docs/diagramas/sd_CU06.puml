@@ -1,0 +1,179 @@
+@startuml sd_CU06
+' CU06 – Gestionar médicos
+' Fuente: routes/web.php (/medicos), CtrlMedicos@index, @buscar, @store, @update, @cambiarEstado,
+'         StoreMedicoRequest, UpdateMedicoRequest, BuscarMedicoRequest, CambiarEstadoRequest,
+'         Medico, Especialidad, Atiende, Bitacora
+title sd CU06 Gestionar médicos
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Administrador" as A
+boundary "V.medicos" as VM
+control "CtrlMedicos" as CM
+entity "M.Medico" as MM
+entity "M.Especialidad" as ME
+entity "M.Atiende" as MA
+entity "M.Bitacora" as MB
+
+activate A
+note over A, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Administrador.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  A -> VM : mostrar(editar)
+  activate VM
+  VM -> CM : index(request)
+  activate CM
+  CM -> MM : medicos = listar()
+  activate MM
+  MM -->> CM : medicos : Collection
+  deactivate MM
+  CM -> ME : especialidades = listar()
+  activate ME
+  ME -->> CM : especialidades : Collection
+  deactivate ME
+  opt [editar = id (formulario integrado, B1)]
+    CM -> MM : editado = obtener(id)
+    activate MM
+    MM -->> CM : editado : Medico
+    deactivate MM
+  end
+  CM -->> VM : view('medicos', medicos, especialidades, editado)
+  deactivate CM
+  VM -->> A : lista de médicos
+  deactivate VM
+end
+
+' ---------------------------------------------------------------- buscar
+alt [buscar]
+  A -> VM : buscar(criterio)
+  activate VM
+  VM -> CM : buscar(request)
+  activate CM
+  note right of CM : BuscarMedicoRequest: criterio de al menos 2 caracteres
+  CM -> MM : medicos = buscar(criterio)
+  activate MM
+  MM -->> CM : medicos : Collection
+  deactivate MM
+  CM -> ME : especialidades = listar()
+  activate ME
+  ME -->> CM : especialidades : Collection
+  deactivate ME
+  CM -->> VM : view('medicos', medicos, especialidades, criterio)
+  deactivate CM
+  VM -->> A : coincidencias por nombre, CI o especialidad
+  deactivate VM
+end
+
+' ---------------------------------------------------------------- crear
+alt [crear]
+  A -> VM : crear(ci, nro_registro_prof, nombres, apellidos, telefono, correo, especialidades)
+  activate VM
+  VM -> CM : store(request)
+  activate CM
+  note right of CM
+    StoreMedicoRequest: correo válido, al menos una especialidad,
+    registro profesional único; after(): Medico::existeCI(ci).
+  end note
+  note right of CM : DB::transaction
+  CM -> MM : medico = crear(datos sin especialidades)
+  activate MM
+  MM -->> CM : medico : Medico
+  deactivate MM
+  CM -> MA : asignar(medico, especialidades)
+  activate MA
+  deactivate MA
+  CM -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Médicos
+  MB -->> CM : bitacora : Bitacora
+  deactivate MB
+  CM -->> VM : redirect(medicos.index) «Médico M-0001 registrado.»
+  deactivate CM
+  VM -->> A : confirmación
+  deactivate VM
+end
+
+' ---------------------------------------------------------------- editar
+alt [editar]
+  A -> VM : editar(medico, ci, nro_registro_prof, nombres, apellidos, telefono, correo, especialidades)
+  activate VM
+  VM -> CM : update(request, medico)
+  activate CM
+  note right of CM : UpdateMedicoRequest (mismas reglas, excepto el propio id)
+  note right of CM : DB::transaction
+  CM -> MM : actualizar(datos sin especialidades)
+  activate MM
+  deactivate MM
+  CM -> MA : asignar(medico, especialidades)
+  activate MA
+  note right of MA : sincroniza: agrega y quita (B5)
+  deactivate MA
+  CM -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, MODIFICAR, Médicos
+  MB -->> CM : bitacora : Bitacora
+  deactivate MB
+  CM -->> VM : redirect(medicos.index) «Médico actualizado.»
+  deactivate CM
+  VM -->> A : confirmación
+  deactivate VM
+end
+
+' ---------------------------------------------------------------- cambiar estado
+alt [cambiar estado]
+  A -> VM : cambiarEstado(medico, accion)
+  activate VM
+  VM -> CM : cambiarEstado(request, medico)
+  activate CM
+  note right of CM : CambiarEstadoRequest: accion = activar | desactivar
+  CM -> MM : cambiarEstado(activar)
+  activate MM
+  deactivate MM
+  CM -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, ACTIVAR | DESACTIVAR, Médicos
+  MB -->> CM : bitacora : Bitacora
+  deactivate MB
+  CM -->> VM : redirect(medicos.index) «Médico activado | desactivado.»
+  deactivate CM
+  VM -->> A : confirmación
+  deactivate VM
+end
+
+deactivate A
+
+@enduml

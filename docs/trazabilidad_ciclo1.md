@@ -68,6 +68,7 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 - **Instalación limpia verificada:** se clonó el repositorio en una carpeta nueva y se siguió solo el `README.md` (composer, npm, `.env`, `key:generate`, base nueva, `migrate:fresh --seed`, `serve`). Los usuarios de prueba de cada rol ingresan y las pruebas pasan. Se agregó al README la nota de rutas largas en Windows (`core.longpaths`).
 - **Claves:** `.env` no está en el repositorio ni en el historial; `.env.example` no tiene claves.
 - **Diferencias con el documento:** `docs/diferencias_con_documento.md`.
+- **Mapa del código:** `docs/mapa_del_codigo.md` (por CU: ruta, Form Request, controlador, métodos de modelos, objetos de la base de datos y prueba, con los nombres que no figuran en las tablas de clases marcados).
 
 ## Despliegue (Render con Docker)
 

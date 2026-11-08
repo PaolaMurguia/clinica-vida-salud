@@ -1,0 +1,57 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU01 Iniciar sesión
+
+actor "Administrador, Recepcionista,\nMédico o Paciente" as A
+boundary "V.login" as VL
+boundary "V.menu" as VM
+control "CtrlSesion" as CS
+entity "M.Usuario" as MU
+entity "M.Rol" as MR
+entity "M.Bitacora" as MB
+
+activate A
+A -> VL : ingresar(login, clave)
+activate VL
+VL -> CS : autenticar(login, clave)
+deactivate VL
+activate CS
+CS -> MU : usuario = buscarPorLogin(login)
+activate MU
+MU -->> CS : usuario
+deactivate MU
+
+alt credenciales correctas, activa y sin bloqueo
+  CS -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  CS -> MR : rol = obtener(usuario.rol_id)
+  activate MR
+  MR -->> CS : rol
+  deactivate MR
+  CS -> MB : registrar(LOGIN)
+  activate MB
+  deactivate MB
+  CS -> VM : view(rol)
+  activate VM
+  deactivate VM
+else contraseña incorrecta
+  CS -> MU : registrarIntentoFallido()
+  activate MU
+  deactivate MU
+  CS -> MB : registrar(LOGIN_FALLIDO)
+  activate MB
+  deactivate MB
+  CS -> VL : view(error)
+  activate VL
+  deactivate VL
+else cuenta inexistente, inactiva o bloqueada
+  CS -> VL : view(error)
+  activate VL
+  deactivate VL
+end
+deactivate CS
+deactivate A
+@enduml

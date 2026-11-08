@@ -123,3 +123,29 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 - **Usuario de los pacientes:** `04_poblacion.sql` crea `maria.lopez` y `luis.fernandez`, pero la decisión A7 exige el CI. El archivo no se modifica: `PoblacionSeeder` actualiza `nombre_usuario` con el CI después de ejecutarlo.
 - **Secuencias:** la primera migración borra las 5 secuencias de los códigos antes de ejecutar `01_esquema.sql`, porque `migrate:fresh` solo borra tablas.
 - **`tests/Feature/ModelosTest.php`:** queda fuera de los módulos porque prueba los 22 modelos y la población, no un caso de uso.
+
+---
+
+# Ciclo 2 (`docs/casos_de_uso_ciclo2.md`)
+
+Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora al iniciar el ciclo. En D4, el envío se hace con el comando `notificaciones:enviar` y, además, al abrir la bandeja (Render gratuito no tiene tareas programadas).
+
+## Nombres que no están en las secciones «Clases» (aprobados por la autora)
+
+| Elemento | Nombre | Motivo |
+|---|---|---|
+| Método de modelo | `Notificacion::enviarPendientes()` | D3 y D4: un solo punto de envío para el comando, la bandeja y los avisos inmediatos. |
+| Bandeja (D5) | vista `notificaciones` con ruta closure (sin controlador) | Mismo patrón aprobado en CU27 (validación del enlace). |
+| Comando (D4) | `notificaciones:enviar`, closure en `routes/console.php` | Sin clase con nombre nuevo. |
+| Traductor de errores de la BD (D1, RNF08) | `withExceptions` en `bootstrap/app.php` | Errores de triggers y restricciones convertidos en mensajes claros, sin clase nueva. |
+| Advertencia al desactivar (B4) | CU06 y CU07, con confirmación como en CU24 | Se implementa al final del ciclo 2. |
+
+## Cambios al documento del ciclo 2 pedidos por la autora
+
+- CU14 y CU15: excepción «el médico no atiende la especialidad seleccionada» (la exige `fn_validar_cita`).
+- CU14: nota de que un paciente (o médico) sin cuenta no recibe notificaciones (`notificacion.usuario_id` es obligatorio).
+- Orden de implementación: CU25 antes que CU24.
+
+## Revisión por caso de uso
+
+(Se completa al cerrar cada CU.)

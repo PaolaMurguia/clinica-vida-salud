@@ -1,0 +1,180 @@
+@startuml sd_CU08
+' CU08 – Gestionar pacientes
+' Fuente: routes/web.php (/pacientes), CtrlPacientes@index, @store, @update, @destroy, @cambiarEstado,
+'         StorePacienteRequest, UpdatePacienteRequest, CambiarEstadoPacienteRequest, Paciente, Historia, Bitacora
+title sd CU08 Gestionar pacientes
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Recepcionista o Administrador" as R
+boundary "V.pacientes" as VP
+control "CtrlPacientes" as CP
+entity "M.Paciente" as MP
+entity "M.Historia" as MH
+entity "M.Bitacora" as MB
+
+activate R
+note over R, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Recepcionista,Administrador (A1).
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  R -> VP : mostrar(editar)
+  activate VP
+  VP -> CP : index(request)
+  activate CP
+  CP -> MP : pacientes = listar()
+  activate MP
+  MP -->> CP : pacientes : LengthAwarePaginator
+  deactivate MP
+  opt [editar = id (formulario integrado, B1)]
+    CP -> MP : editado = obtener(id)
+    activate MP
+    MP -->> CP : editado : Paciente
+    deactivate MP
+  end
+  CP -->> VP : view('pacientes', pacientes, editado)
+  deactivate CP
+  VP -->> R : lista de pacientes
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- crear
+alt [crear]
+  R -> VP : crear(ci, nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion, contacto_emerg_nombre, contacto_emerg_tel, tipo_sangre)
+  activate VP
+  VP -> CP : store(request)
+  activate CP
+  note right of CP
+    StorePacienteRequest: obligatorios, fecha no futura, menor de 18
+    con contacto de emergencia (B10); after(): Paciente::existeCI(ci)
+    y Paciente::buscarPorCI(ci) para mostrar al paciente existente.
+  end note
+  note right of CP : DB::transaction
+  CP -> MP : paciente = crear(datos sin tipo_sangre)
+  activate MP
+  MP -->> CP : paciente : Paciente
+  deactivate MP
+  opt [tipo_sangre indicado]
+    CP -> MH : historia = obtener(paciente.id)
+    activate MH
+    MH -->> CP : historia : Historia
+    deactivate MH
+    note right of CP : historia->update(tipo_sangre) (B7)
+  end
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Pacientes
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(pacientes.index) «Paciente P-0001 registrado.»
+  deactivate CP
+  VP -->> R : confirmación
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- editar
+alt [editar]
+  R -> VP : editar(paciente, datos del paciente, tipo_sangre)
+  activate VP
+  VP -> CP : update(request, paciente)
+  activate CP
+  note right of CP : UpdatePacienteRequest (mismas reglas, excepto el propio id)
+  CP -> MH : historia = obtener(paciente.id)
+  activate MH
+  MH -->> CP : historia : Historia
+  deactivate MH
+  note right of CP : DB::transaction
+  CP -> MP : actualizar(datos sin tipo_sangre)
+  activate MP
+  deactivate MP
+  opt [tipo_sangre distinto del anterior]
+    note right of CP : historia->update(tipo_sangre)
+  end
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, MODIFICAR (con sangre anterior → nueva)
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(pacientes.index) «Paciente actualizado.»
+  deactivate CP
+  VP -->> R : confirmación
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- desactivar
+alt [desactivar]
+  R -> VP : desactivar(paciente)
+  activate VP
+  VP -> CP : destroy(paciente)
+  activate CP
+  CP -> MP : desactivar()
+  activate MP
+  deactivate MP
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, DESACTIVAR, Pacientes
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(pacientes.index) «desactivado; su historial se conserva.»
+  deactivate CP
+  VP -->> R : confirmación
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- reactivar (no está en el documento)
+alt [reactivar (agregado, aprobado por la autora)]
+  R -> VP : cambiarEstado(paciente, accion = activar)
+  activate VP
+  VP -> CP : cambiarEstado(request, paciente)
+  activate CP
+  note right of CP : CambiarEstadoPacienteRequest: accion = activar
+  CP -> MP : actualizar(estado = true)
+  activate MP
+  deactivate MP
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, ACTIVAR, Pacientes
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(pacientes.index) «Paciente reactivado.»
+  deactivate CP
+  VP -->> R : confirmación
+  deactivate VP
+end
+
+deactivate R
+
+@enduml

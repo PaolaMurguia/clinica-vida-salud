@@ -1,0 +1,51 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU26 Cambiar contraseña
+
+actor "Administrador, Recepcionista,\nMédico o Paciente" as A
+boundary "V.cambiarClave" as VC
+boundary "V.menu" as VM
+control "CtrlClave" as CC
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate A
+A -> VC : cambiar(clave_actual, clave_nueva)
+activate VC
+VC -> CC : update(clave_actual, clave_nueva)
+deactivate VC
+activate CC
+CC -> MU : ok = verificarClave(clave_actual)
+activate MU
+MU -->> CC : ok
+deactivate MU
+
+alt contraseña actual correcta
+  CC -> MU : actualizarClave(clave_nueva)
+  activate MU
+  deactivate MU
+  CC -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  CC -> MB : registrar(CAMBIO_CLAVE)
+  activate MB
+  deactivate MB
+  CC -> VM : view(menu)
+  activate VM
+  deactivate VM
+else contraseña actual incorrecta
+  CC -> MU : registrarIntentoFallido()
+  activate MU
+  deactivate MU
+  CC -> MB : registrar(CAMBIO_CLAVE_FALLIDO)
+  activate MB
+  deactivate MB
+  CC -> VC : view(error)
+  activate VC
+  deactivate VC
+end
+deactivate CC
+deactivate A
+@enduml

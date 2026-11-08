@@ -1,0 +1,202 @@
+@startuml sd_CU03
+' CU03 – Gestionar usuarios y roles
+' Fuente: routes/web.php (/usuarios), CtrlUsuarios@index, @store, @update, @restablecerClave, @cambiarEstado,
+'         StoreUsuarioRequest, UpdateUsuarioRequest, CambiarEstadoUsuarioRequest, Usuario, Rol, Medico, Bitacora
+title sd CU03 Gestionar usuarios y roles
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Administrador" as A
+boundary "V.usuarios" as VU
+control "CtrlUsuarios" as CU
+entity "M.Usuario" as MU
+entity "M.Rol" as MR
+entity "M.Medico" as MM
+entity "M.Bitacora" as MB
+
+activate A
+note over A, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Administrador.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  A -> VU : mostrar(editar)
+  activate VU
+  VU -> CU : index(request)
+  activate CU
+  CU -> MU : usuarios = listar()
+  activate MU
+  MU -->> CU : usuarios : Collection
+  deactivate MU
+  CU -> MR : roles = obtener()
+  activate MR
+  MR -->> CU : roles : Collection
+  deactivate MR
+  CU -> MM : medicos = listar()
+  activate MM
+  MM -->> CU : medicos : Collection
+  deactivate MM
+  opt [editar = id (formulario integrado, B1)]
+    CU -> MU : editado = obtener(id)
+    activate MU
+    MU -->> CU : editado : Usuario
+    deactivate MU
+  end
+  CU -->> VU : view('usuarios', usuarios, roles, medicos, editado)
+  deactivate CU
+  VU -->> A : cuentas con su rol y estado
+  deactivate VU
+end
+
+' ---------------------------------------------------------------- crear
+alt [crear]
+  A -> VU : crear(nombre_usuario, correo, clave, rol_id, medico_id, puede_marcar_atendida)
+  activate VU
+  VU -> CU : store(request)
+  activate CU
+  note right of CU
+    StoreUsuarioRequest: RNF05; after(): usuario y correo
+    únicos (Usuario::buscarPorLogin) y médico vinculado
+    activo y sin cuenta.
+  end note
+  CU -> MR : rolMedico = obtener('Médico')
+  activate MR
+  MR -->> CU : rolMedico : Rol
+  deactivate MR
+  opt [rol_id = Médico]
+    CU -> MM : medico = obtener(medico_id)
+    activate MM
+    MM -->> CU : medico : Medico
+    deactivate MM
+  end
+  CU -> MU : usuario = crear(datos + debe_cambiar_clave = true)
+  activate MU
+  MU -->> CU : usuario : Usuario
+  deactivate MU
+  CU -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Usuarios
+  MB -->> CU : bitacora : Bitacora
+  deactivate MB
+  CU -->> VU : redirect(usuarios.index) «Usuario registrado…»
+  deactivate CU
+  VU -->> A : confirmación
+  deactivate VU
+end
+
+' ---------------------------------------------------------------- editar
+alt [editar]
+  A -> VU : editar(usuario, nombre_usuario, correo, rol_id, medico_id, puede_marcar_atendida)
+  activate VU
+  VU -> CU : update(request, usuario)
+  activate CU
+  note right of CU
+    UpdateUsuarioRequest: reglas de StoreUsuarioRequest
+    y no cambiar el rol del único administrador activo.
+  end note
+  CU -> MR : rolMedico = obtener('Médico')
+  activate MR
+  MR -->> CU : rolMedico : Rol
+  deactivate MR
+  opt [rol_id = Médico]
+    CU -> MM : medico = obtener(medico_id)
+    activate MM
+    MM -->> CU : medico : Medico
+    deactivate MM
+  end
+  CU -> MU : actualizar(datos)
+  activate MU
+  deactivate MU
+  CU -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, MODIFICAR, Usuarios
+  MB -->> CU : bitacora : Bitacora
+  deactivate MB
+  CU -->> VU : redirect(usuarios.index) «Usuario actualizado.»
+  deactivate CU
+  VU -->> A : confirmación
+  deactivate VU
+end
+
+' ---------------------------------------------------------------- restablecer contraseña
+alt [restablecer contraseña]
+  A -> VU : restablecerClave(usuario)
+  activate VU
+  VU -> CU : restablecerClave(usuario)
+  activate CU
+  note right of CU : sin Form Request; Str::password(12) que cumple RNF05
+  CU -> MU : marcarTemporal(temporal)
+  activate MU
+  note right of MU : debe_cambiar_clave = true y reiniciarIntentos()
+  deactivate MU
+  CU -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, RESTABLECER_CLAVE, Usuarios
+  MB -->> CU : bitacora : Bitacora
+  deactivate MB
+  CU -->> VU : redirect(usuarios.index) con claveTemporal (flash)
+  deactivate CU
+  VU -->> A : contraseña temporal mostrada una sola vez
+  deactivate VU
+end
+
+' ---------------------------------------------------------------- cambiar estado
+alt [cambiar estado]
+  A -> VU : cambiarEstado(usuario, accion)
+  activate VU
+  VU -> CU : cambiarEstado(request, usuario)
+  activate CU
+  note right of CU
+    CambiarEstadoUsuarioRequest: accion = activar | desactivar
+    | desbloquear; no desactivar al único administrador
+    activo ni la propia cuenta.
+  end note
+  CU -> MU : actualizarEstado(accion)
+  activate MU
+  deactivate MU
+  CU -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, ACTIVAR | DESACTIVAR | DESBLOQUEAR
+  MB -->> CU : bitacora : Bitacora
+  deactivate MB
+  CU -->> VU : redirect(usuarios.index) «Cuenta activada | desactivada | desbloqueada.»
+  deactivate CU
+  VU -->> A : confirmación
+  deactivate VU
+end
+
+deactivate A
+
+@enduml

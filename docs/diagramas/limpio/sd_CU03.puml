@@ -1,0 +1,94 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU03 Gestionar usuarios y roles
+
+actor "Administrador" as A
+boundary "V.usuarios" as VU
+control "CtrlUsuarios" as CU
+entity "M.Usuario" as MU
+entity "M.Rol" as MR
+entity "M.Medico" as MM
+entity "M.Bitacora" as MB
+
+activate A
+alt mostrar
+  A -> VU : mostrar()
+  activate VU
+  VU -> CU : index()
+  deactivate VU
+  activate CU
+  CU -> MU : usuarios = listar()
+  activate MU
+  MU -->> CU : usuarios
+  deactivate MU
+  CU -> VU : view(usuarios)
+  activate VU
+  deactivate VU
+  deactivate CU
+end
+
+alt crear
+  A -> VU : crear(datos)
+  activate VU
+  VU -> CU : store(datos)
+  deactivate VU
+  activate CU
+  CU -> MR : rol = obtener(rol_id)
+  activate MR
+  MR -->> CU : rol
+  deactivate MR
+  opt rol Médico
+    CU -> MM : medico = obtener(medico_id)
+    activate MM
+    MM -->> CU : medico
+    deactivate MM
+  end
+  CU -> MU : crear(datos, rol, medico)
+  activate MU
+  deactivate MU
+else editar
+  A -> VU : editar(usuario, datos)
+  activate VU
+  VU -> CU : update(usuario, datos)
+  deactivate VU
+  CU -> MU : actualizar(datos)
+  activate MU
+  deactivate MU
+end
+CU -> MB : registrar(datos)
+activate MB
+deactivate MB
+CU -> VU : view(usuarios)
+activate VU
+deactivate VU
+deactivate CU
+
+alt restablecer contraseña
+  A -> VU : restablecerClave(usuario)
+  activate VU
+  VU -> CU : restablecerClave(usuario)
+  deactivate VU
+  activate CU
+  CU -> MU : marcarTemporal(temporal)
+  activate MU
+  deactivate MU
+else activar, desactivar o desbloquear
+  A -> VU : cambiarEstado(usuario, accion)
+  activate VU
+  VU -> CU : cambiarEstado(usuario, accion)
+  deactivate VU
+  CU -> MU : actualizarEstado(accion)
+  activate MU
+  deactivate MU
+end
+CU -> MB : registrar(datos)
+activate MB
+deactivate MB
+CU -> VU : view(usuarios)
+activate VU
+deactivate VU
+deactivate CU
+deactivate A
+@enduml

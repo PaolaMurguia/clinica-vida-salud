@@ -1,0 +1,73 @@
+@startuml sd_CU02
+' CU02 – Cerrar sesión
+' Fuente: routes/web.php (POST /logout), CtrlSesion@cerrarSesion, Bitacora
+title sd CU02 Cerrar sesión
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Usuario" as U
+boundary "V.menu" as VM
+control "CtrlSesion" as CS
+entity "M.Bitacora" as MB
+
+activate U
+U -> VM : salir()
+activate VM
+VM -> CS : cerrarSesion(request)
+activate CS
+note right of CS
+  Middlewares auth, auth.session y sin.cache.
+  Sesión ya expirada: auth redirige a
+  V.login sin llegar a CtrlSesion.
+end note
+
+CS -> MB : registrar(datos)
+activate MB
+note right of MB : ServicioBitacora: ACCESO, LOGOUT
+MB -->> CS : bitacora : Bitacora
+deactivate MB
+
+note right of CS
+  Auth::logout(),
+  session()->invalidate(),
+  session()->regenerateToken()
+end note
+CS -->> VM : redirect(login)
+deactivate CS
+
+VM -->> U : muestra V.login «Sesión cerrada correctamente.»
+deactivate VM
+deactivate U
+
+@enduml

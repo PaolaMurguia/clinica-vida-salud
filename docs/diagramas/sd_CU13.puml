@@ -1,0 +1,175 @@
+@startuml sd_CU13
+' CU13 – Consultar disponibilidad
+' Fuente: routes/web.php (GET /disponibilidad, /disponibilidad/medicos, /disponibilidad/franjas),
+'         CtrlDisponibilidad@especialidades, @medicos, @franjas, EspecialidadesRequest, MedicosRequest,
+'         FranjasRequest, Paciente, Especialidad, Medico, Bloqueo, Horario, Cita
+title sd CU13 Consultar disponibilidad
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Recepcionista o Paciente" as U
+boundary "V.disponibilidad" as VD
+control "CtrlDisponibilidad" as CD
+entity "M.Paciente" as MP
+entity "M.Especialidad" as ME
+entity "M.Medico" as MM
+entity "M.Bloqueo" as MBQ
+entity "M.Horario" as MH
+entity "M.Cita" as MC
+
+activate U
+note over U, MC
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Recepcionista,Paciente.
+  El paciente siempre consulta para sí mismo (RN18): el Form Request reemplaza paciente_id por el suyo.
+end note
+
+== Paso 1: elegir especialidad ==
+U -> VD : elegirEspecialidad(paciente_id)
+activate VD
+VD -> CD : especialidades(request)
+activate CD
+note right of CD : EspecialidadesRequest: paciente_id existente y activo
+opt [paciente_id indicado]
+  CD -> MP : paciente = obtener(paciente_id)
+  activate MP
+  MP -->> CD : paciente : Paciente
+  deactivate MP
+  CD -> ME : especialidades = listarPorEdad(paciente.edad)
+  activate ME
+  ME -->> CD : especialidades : Collection
+  deactivate ME
+end
+CD -->> VD : view('disponibilidad', paso 1, paciente, especialidades)
+deactivate CD
+VD -->> U : especialidades de su edad (RN15) o «seleccione un paciente»
+deactivate VD
+
+== Pasos 2 y 3: elegir médico ==
+U -> VD : elegirMedico(paciente_id, especialidad_id)
+activate VD
+VD -> CD : medicos(request)
+activate CD
+note right of CD
+  MedicosRequest: la especialidad corresponde
+  a la edad (Paciente::obtener, listarPorEdad).
+end note
+CD -> MP : paciente = obtener(paciente_id)
+activate MP
+MP -->> CD : paciente : Paciente
+deactivate MP
+CD -> ME : especialidades = listarPorEdad(paciente.edad)
+activate ME
+ME -->> CD : especialidades : Collection
+deactivate ME
+CD -> MM : medicos = listarPorEspecialidad(especialidad_id)
+activate MM
+MM -->> CD : medicos : Collection
+deactivate MM
+CD -->> VD : view('disponibilidad', paso 2, paciente, especialidad, medicos)
+deactivate CD
+VD -->> U : médicos activos de la especialidad
+deactivate VD
+
+== Pasos 3 a 6: consultar franjas ==
+U -> VD : consultar(paciente_id, especialidad_id, medico_id, fecha)
+activate VD
+VD -> CD : franjas(request)
+activate CD
+note right of CD
+  FranjasRequest: fecha >= hoy (excepción 1);
+  especialidad según la edad en la fecha y
+  médico de esa especialidad.
+end note
+CD -> MP : paciente = obtener(paciente_id)
+activate MP
+MP -->> CD : paciente : Paciente
+deactivate MP
+CD -> ME : especialidades = listarPorEdad(edadEnLaFecha)
+activate ME
+ME -->> CD : especialidades : Collection
+deactivate ME
+CD -> MM : medicos = listarPorEspecialidad(especialidad.id)
+activate MM
+MM -->> CD : medicos : Collection
+deactivate MM
+
+CD -> MBQ : bloqueo = estaBloqueada(medico.id, fecha)
+activate MBQ
+MBQ -->> CD : bloqueo : ?Bloqueo
+deactivate MBQ
+alt [bloqueo != null: fecha bloqueada]
+  note right of CD : la vista muestra bloqueo.motivo
+else [sin bloqueo]
+  CD -> MH : horarios = obtenerDelDia(medico.id, fecha)
+  activate MH
+  MH -->> CD : horarios : Collection
+  deactivate MH
+  alt [horarios vacío: el médico no atiende ese día]
+    note right of CD : atiende = false
+  else [con horarios]
+    loop [por cada horario del día]
+      CD -> MH : franjas = generarFranjas()
+      activate MH
+      MH -->> CD : franjas : array
+      deactivate MH
+    end
+    note right of CD : descarta las franjas pasadas (paso 5)
+    CD -> MC : ocupadas = listarOcupadas(medico.id, fecha)
+    activate MC
+    MC -->> CD : ocupadas : Collection
+    deactivate MC
+    note right of CD
+      marca cada franja «libre» u «ocupada»,
+      sin datos de la cita ni del paciente (RN09)
+    end note
+  end
+end
+
+opt [sin franjas libres (bloqueada, no atiende o todo ocupado)]
+  loop [i = 1..60, hasta hallar una fecha con franjas libres]
+    note right of CD
+      repite estaBloqueada → obtenerDelDia →
+      generarFranjas → listarOcupadas con fecha + i
+      (closure local calcularDia, sin método nuevo)
+    end note
+  end
+end
+
+CD -->> VD : view('disponibilidad', paso 3, medico, fecha, resultado, siguiente)
+deactivate CD
+VD -->> U : franjas libres y ocupadas, motivo del bloqueo o siguiente fecha
+deactivate VD
+deactivate U
+
+@enduml

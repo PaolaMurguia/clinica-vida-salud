@@ -1,0 +1,88 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU06 Gestionar médicos
+
+actor "Administrador" as A
+boundary "V.medicos" as VM
+control "CtrlMedicos" as CM
+entity "M.Medico" as MM
+entity "M.Especialidad" as ME
+entity "M.Atiende" as MA
+entity "M.Bitacora" as MB
+
+activate A
+alt mostrar
+  A -> VM : mostrar()
+  activate VM
+  VM -> CM : index()
+  deactivate VM
+  activate CM
+  CM -> MM : medicos = listar()
+  activate MM
+  MM -->> CM : medicos
+  deactivate MM
+else buscar
+  A -> VM : buscar(criterio)
+  activate VM
+  VM -> CM : buscar(criterio)
+  deactivate VM
+  CM -> MM : medicos = buscar(criterio)
+  activate MM
+  MM -->> CM : medicos
+  deactivate MM
+end
+CM -> ME : especialidades = listar()
+activate ME
+ME -->> CM : especialidades
+deactivate ME
+CM -> VM : view(medicos, especialidades)
+activate VM
+deactivate VM
+deactivate CM
+
+alt crear
+  A -> VM : crear(datos, especialidades)
+  activate VM
+  VM -> CM : store(datos, especialidades)
+  deactivate VM
+  activate CM
+  CM -> MM : existeCI(ci)
+  activate MM
+  deactivate MM
+  CM -> MM : crear(datos)
+  activate MM
+  deactivate MM
+  CM -> MA : asignar(medico, especialidades)
+  activate MA
+  deactivate MA
+else editar
+  A -> VM : editar(medico, datos, especialidades)
+  activate VM
+  VM -> CM : update(medico, datos, especialidades)
+  deactivate VM
+  CM -> MM : actualizar(datos)
+  activate MM
+  deactivate MM
+  CM -> MA : asignar(medico, especialidades)
+  activate MA
+  deactivate MA
+else cambiar estado
+  A -> VM : cambiarEstado(medico, accion)
+  activate VM
+  VM -> CM : cambiarEstado(medico, accion)
+  deactivate VM
+  CM -> MM : cambiarEstado(activar)
+  activate MM
+  deactivate MM
+end
+CM -> MB : registrar(datos)
+activate MB
+deactivate MB
+CM -> VM : view(medicos)
+activate VM
+deactivate VM
+deactivate CM
+deactivate A
+@enduml

@@ -1,0 +1,112 @@
+@startuml sd_CU26
+' CU26 – Cambiar contraseña
+' Fuente: routes/web.php (PUT /cambiar-clave), CtrlClave@update, UpdateClaveRequest, Usuario, Bitacora
+title sd CU26 Cambiar contraseña
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Usuario" as U
+boundary "V.cambiarClave" as VC
+control "CtrlClave" as CC
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate U
+U -> VC : cambiar(clave_actual, clave_nueva, clave_nueva_confirmation)
+activate VC
+note right of VC
+  JavaScript: campos no vacíos y
+  confirmación igual a la nueva
+end note
+VC -> CC : update(request)
+activate CC
+note right of CC
+  Middlewares auth, auth.session, sin.cache
+  (sin clave.temporal: RN23).
+  UpdateClaveRequest: obligatorios, confirmed,
+  different:clave_actual, RNF05.
+end note
+
+CC -> MU : ok = verificarClave(clave_actual)
+activate MU
+MU -->> CC : ok : bool
+deactivate MU
+
+alt [ok = true: contraseña actual correcta]
+  CC -> MU : actualizarClave(clave_nueva)
+  activate MU
+  deactivate MU
+  CC -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  note right of CC
+    Auth::login(usuario), session()->regenerate():
+    auth.session cierra las demás sesiones.
+  end note
+  CC -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CAMBIO_CLAVE
+  MB -->> CC : bitacora : Bitacora
+  deactivate MB
+  CC -->> VC : redirect(portal | menu) «Contraseña actualizada correctamente.»
+else [ok = false: contraseña actual incorrecta]
+  CC -> MU : minutosBloqueo = registrarIntentoFallido()
+  activate MU
+  MU -->> CC : minutosBloqueo : ?int
+  deactivate MU
+  CC -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCESO, CAMBIO_CLAVE_FALLIDO
+  MB -->> CC : bitacora : Bitacora
+  deactivate MB
+  opt [minutosBloqueo != null (B9: quinto fallo)]
+    CC -> MB : registrar(datos)
+    activate MB
+    note right of MB : ServicioBitacora: ACCESO, BLOQUEO_CUENTA
+    MB -->> CC : bitacora : Bitacora
+    deactivate MB
+    note right of CC
+      Auth::logout(), session()->invalidate(),
+      session()->regenerateToken()
+    end note
+  end
+  CC -->> VC : back() con error en clave_actual | redirect(login) si se bloqueó
+end
+deactivate CC
+
+VC -->> U : muestra la confirmación o el error
+deactivate VC
+deactivate U
+
+@enduml
