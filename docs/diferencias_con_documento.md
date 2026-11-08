@@ -200,3 +200,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU15 | El comprobante actualizado (paso 10) es el de CU14 (`programarCita` con `?cita=`). | Mismo comprobante, sin otra vista. | Aplicado. |
 | CU15 | D2: si la restricción EXCLUDE rechaza la nueva franja, se vuelve a `reprogramarCita` con la misma fecha y el aviso. Dentro de la transacción la cita se lee con `lockForUpdate()` (B13). | Excepción 3. | Aplicado. |
 | CU15 | Con el médico inactivo, la vista no ofrece franjas e indica cancelar y programar otra cita. | Excepciones 5 y 7. | Aplicado. |
+
+### CU17 – Registrar asistencia
+
+`CtrlCitas` suma cambiarEstado(), el método de la tabla de CU17. Las operaciones confirmar(), atender() y registrarInasistencia() de `V.agenda` envían el parámetro `accion` (`confirmar`, `atender`, `registrarInasistencia`), igual que B2 del ciclo 1.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU17 | Se implementa antes que CU18 (orden de la autora): el commit de CU17 lleva el servidor y las pruebas; los botones se agregan a `V.agenda` en CU18. | Orden aplicado. | Aplicado. |
+| CU17 | Las reglas están en el Form Request `Citas/CambiarEstadoCitaRequest` (llama a `Usuario::puedeMarcarAtendida()`); las transiciones están en la constante `Cita::TRANSICIONES`, igual que `fn_validar_transicion`, que las respalda. | Convención del ciclo 1 (reglas en `after()`). | Aplicado. |
+| CU17 | La recepcionista puede confirmar en cualquier momento antes del cambio a un estado final; Atendida e Inasistencia solo desde la hora de inicio (D6). El médico solo marca Atendida, y solo en sus citas. | Paso 2 y D6. | Aplicado. |
+| CU17 | Excepción 6 (dos usuarios a la vez): la transacción vuelve a leer la cita con `lockForUpdate()`; si su estado ya cambió, el segundo recibe «Transición no permitida: la cita ya cambió de estado». | Excepción 6. | Aplicado; probado. |
+| CU17 | `Usuario::puedeMarcarAtendida()` exige además que la cuenta sea de un médico y esté activa. | RN12. | Aplicado. |

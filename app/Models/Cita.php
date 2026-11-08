@@ -155,6 +155,18 @@ class Cita extends Model
         $this->update(['fecha' => $fecha->toDateString(), 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin]);
     }
 
+    /** CU17: estados a los que puede pasar la cita desde su estado actual (RF10, igual que fn_validar_transicion). */
+    public const TRANSICIONES = [
+        'Programada' => ['Confirmada', 'Atendida', 'Cancelada', 'Inasistencia'],
+        'Confirmada' => ['Atendida', 'Cancelada', 'Inasistencia'],
+    ];
+
+    /** CU17: cambia el estado de la cita; trg_validar_transicion rechaza las transiciones no permitidas. */
+    public function cambiarEstado(string $estado): void
+    {
+        $this->update(['estado' => $estado]);
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {

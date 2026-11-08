@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citas;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Citas\CambiarEstadoCitaRequest;
 use App\Http\Requests\Citas\CancelarCitaRequest;
 use App\Http\Requests\Citas\CreateCitaRequest;
 use App\Http\Requests\Citas\EditCitaRequest;
@@ -251,6 +252,42 @@ class CtrlCitas extends Controller
         // paso 10: comprobante actualizado
         return redirect()->route('citas.create', ['cita' => $reprogramada->id])
             ->with('exito', "Cita {$reprogramada->codigo} reprogramada.");
+    }
+
+    /**
+     * CU17 – Registrar asistencia (confirmar, atender, registrarInasistencia): cambia el estado de la cita
+     * desde la agenda, lo registra en el historial y, si la cita terminó (Atendida o Inasistencia), anula
+     * los recordatorios pendientes (RN21). Si otro usuario la cambió antes, se conserva el primer cambio.
+     */
+    public function cambiarEstado(CambiarEstadoCitaRequest $request, Cita $cita): RedirectResponse
+    {
+        $nuevo = CambiarEstadoCitaRequest::ACCIONES[$request->validated('accion')];
+
+        $cambio = DB::transaction(function () use ($cita, $nuevo) {
+            $cita = Cita::whereKey($cita->id)->lockForUpdate()->first();
+            $anterior = $cita->estado;
+            if (! in_array($nuevo, Cita::TRANSICIONES[$anterior] ?? [], true)) {
+                return null;   // excepción 6: otro usuario cambió la cita primero
+            }
+
+            $cita->cambiarEstado($nuevo);
+            HistorialCita::registrar($cita, $anterior, $nuevo);
+            if (in_array($nuevo, ['Atendida', 'Inasistencia'], true)) {
+                Notificacion::anularPendientes($cita);
+            }
+
+            return [Cita::obtener($cita->id), $anterior];
+        });
+
+        if ($cambio === null) {
+            return back()->with('error', 'Transición no permitida: la cita ya cambió de estado (otro usuario la actualizó primero).');
+        }
+        [$cita, $anterior] = $cambio;
+
+        ServicioBitacora::registrar(ServicioBitacora::ACCION, 'CAMBIAR_ESTADO', 'Citas', $cita->id,
+            "Cita {$cita->codigo}: $anterior → $nuevo");
+
+        return back()->with('exito', "Cita {$cita->codigo}: $nuevo.");
     }
 
     /**

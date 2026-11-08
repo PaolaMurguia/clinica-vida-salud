@@ -90,7 +90,7 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementación. Orden aplicado: CU14, CU19, CU16, CU15, CU17, CU18, CU25, CU24, CU20, CU22, CU21, CU23.
 
-**Último CU cerrado:** CU15.
+**Último CU cerrado:** CU17 (servidor; sus botones en `V.agenda` se agregan con CU18).
 
 ## Resumen por caso de uso
 
@@ -99,7 +99,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementaci�
 | CU14 | Programar cita | Citas | `programarCita` (resumen y comprobante con `?cita=`); franjas libres de `disponibilidad` enlazadas | `Citas\CtrlCitas` → create(), store() ✅ | `Paciente` → obtener() ✅ · `Especialidad` → listarPorEdad() ✅ · `Medico` → obtener() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `Cita` → existeConflicto(), crear() ✅ (+ obtener() de CU15 para el comprobante) · `HistorialCita` → registrar() ✅ · `Notificacion` → programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/programar` (`citas.create`), `POST /citas` (`citas.store`) | `Citas/ProgramarCitaTest` (19) | ✅ |
 | CU15 | Reprogramar cita | Citas | `reprogramarCita` (fecha y franjas del mismo médico); comprobante actualizado en `programarCita` | `Citas\CtrlCitas` → edit(), update() ✅ | `Cita` → obtener(), existeConflicto(), reprogramar() ✅ (+ listarOcupadas() de CU13 para mostrar las ocupadas) · `Medico` → obtener() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes(), programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/{cita}/reprogramar` (`citas.edit`, `?fecha=`), `PUT /citas/{cita}` (`citas.update`) | `Citas/ReprogramarCitaTest` (12) | ✅ |
 | CU16 | Cancelar cita | Citas | `cancelarCita` (desde el detalle de `historialCitas`) | `Citas\CtrlCitas` → show(), cancelar() ✅ | `Cita` → obtener(), cancelar() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes(), programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/{cita}` (`citas.show`), `PATCH /citas/{cita}/cancelar` (`citas.cancelar`) | `Citas/CancelarCitaTest` (8) | ✅ |
-| CU17 | Registrar asistencia | Citas | | | | | | ⬜ |
+| CU17 | Registrar asistencia | Citas | `agenda` (botones confirmar, atender y registrar inasistencia; se agregan con CU18) | `Citas\CtrlCitas` → cambiarEstado() ✅ (parámetro `accion`, B2) | `Usuario` → puedeMarcarAtendida() ✅ · `Cita` → obtener(), cambiarEstado() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes() ✅ · `Bitacora` → registrar() ✅ | `PATCH /citas/{cita}/estado` (`citas.cambiarEstado`) | `Citas/RegistrarAsistenciaTest` (11) | 🟡 servidor ✅; botones con CU18 |
 | CU18 | Consultar agenda médica | Citas | | | | | | ⬜ |
 | CU19 | Consultar historial de citas | Citas | `historialCitas` (lista con filtros y detalle); enlace «Historial de citas» en `buscarPaciente` y «Mis citas» en el portal | `Citas\CtrlHistorialCitas` → index(), show() ✅ | `Paciente` → obtener() ✅ · `Cita` → listarPorPaciente() ✅ (+ obtener() de CU15/CU16 en el detalle) · `HistorialCita` → listarPorCita() ✅ | `GET /historial-citas` (`historialCitas.index`, `?paciente_id=`, `estado`, `desde`, `hasta`), `GET /historial-citas/{cita}` (`historialCitas.show`) | `Citas/ConsultarHistorialCitasTest` (11) | ✅ |
 | CU20 | Gestionar historia clínica | Clinica | | | | | | ⬜ |

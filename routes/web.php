@@ -214,3 +214,10 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     Route::get('/historial-citas', [CtrlHistorialCitas::class, 'index'])->name('historialCitas.index');
     Route::get('/historial-citas/{cita}', [CtrlHistorialCitas::class, 'show'])->whereNumber('cita')->name('historialCitas.show');
 });
+
+// --- Recepcionista y Médico ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico'])->group(function () {
+    // CU17 – Registrar asistencia: UI_Agenda (V.agenda) confirmar(), atender(), registrarInasistencia()
+    // → CtrlCitas@cambiarEstado con el parámetro accion (B2)
+    Route::patch('/citas/{cita}/estado', [CtrlCitas::class, 'cambiarEstado'])->whereNumber('cita')->name('citas.cambiarEstado');
+});
