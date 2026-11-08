@@ -249,3 +249,17 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU24 | Filtro de médico con la opción «Toda la clínica» (`medico_id=clinica`). Form Requests `Administracion/StoreBloqueoRequest` y `FiltrarBloqueosRequest`. | Paso 1. | Aplicado. |
 | CU24 | La eliminación pide confirmación con `confirm()` del navegador; se permite eliminar cualquier bloqueo (también de fechas pasadas). | Paso 7; el documento no restringe la fecha. | Aplicado. |
 | CU24 | La bitácora del bloqueo de un médico usa `Medico::obtener()` (tabla de CU03/CU07) para el código del médico. | Descripción legible en CU04. | Aplicado. |
+
+### CU20 – Gestionar historia clínica
+
+`CtrlHistoriaClinica` tiene exactamente show(), storeAtencion(), updateAtencion() y storeAntecedente(). Vista `historiaClinica`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU20 | «Paciente que atiende o atendió» = el médico tiene con él al menos una cita no cancelada (en cualquier otro estado). Se comprueba con una consulta Eloquent (B13) en show() y en `authorize()` de los Form Requests; si no, 403. | RN18 y excepción 4; el documento no define «atiende». | Aplicado. |
+| CU20 | El paciente usa la misma show() desde `GET /mi-historia-clinica` (sin parámetro, para el menú); ve sus atenciones con diagnóstico (paso 9) y solo los exámenes Registrados o Revisados (D8). La recepción y el administrador no tienen acceso (403). | Paso 9, RN18 y D8. | Aplicado. |
+| CU20 | Rangos permitidos de los signos vitales: peso 0,5–400 kg, talla 20–250 cm, temperatura 30–45 °C (igual que el CHECK), presión «sistólica/diastólica» con sistólica 50–260, diastólica 30–160 y sistólica mayor. | El documento pide «rangos permitidos» sin fijarlos; los CHECK de la tabla son más amplios. | Aplicado; la autora puede ajustarlos. |
+| CU20 | Modificar una atención usa `?editar={registro}` en show() (B1) y `PUT /atenciones/{registro}` (updateAtencion). Solo el médico de la cita la modifica (403 para otro). | Excepción 3 y D7. | Aplicado. |
+| CU20 | La fecha de modificación de la historia se actualiza con `Historia::obtener()->update()` (B13) al registrar o modificar una atención, porque `trg_tocar_historia` solo se dispara con los antecedentes. | Paso 5. | Aplicado. |
+| CU20 | El médico puede registrar los seis tipos de antecedente (incluidos «Cirugía» y «Otro»); el paciente sigue con los cuatro de CU11. | Paso 6 y decisión de CU11. | Aplicado. |
+| CU20 | Form Requests `Clinica/StoreAtencionRequest`, `UpdateAtencionRequest` y `StoreAntecedenteRequest` (mismo nombre que el de Pacientes, en otro módulo). | Convención de Form Requests. | Aplicado. |

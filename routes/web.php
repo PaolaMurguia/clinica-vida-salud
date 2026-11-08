@@ -12,6 +12,7 @@ use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Citas\CtrlAgenda;
 use App\Http\Controllers\Citas\CtrlCitas;
 use App\Http\Controllers\Citas\CtrlHistorialCitas;
+use App\Http\Controllers\Clinica\CtrlHistoriaClinica;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
@@ -251,4 +252,24 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     Route::post('/pagos', [CtrlPagos::class, 'store'])->name('pagos.store');
     Route::get('/pagos/{pago}', [CtrlPagos::class, 'show'])->whereNumber('pago')->name('pagos.show');
     Route::patch('/pagos/{pago}', [CtrlPagos::class, 'update'])->whereNumber('pago')->name('pagos.update');
+});
+
+// =====================================================================
+// Módulo Clinica (ciclo 2): CU20, CU21, CU22
+// =====================================================================
+
+// --- Médico y Paciente (la recepción no ve diagnósticos, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico,Paciente'])->group(function () {
+    // CU20 – Gestionar historia clínica: UI_HistoriaClinica (V.historiaClinica) mostrar() → CtrlHistoriaClinica@show
+    // El médico abre la de un paciente que atiende o atendió; el paciente, la suya («Mi historia clínica»)
+    Route::get('/historia-clinica/{paciente}', [CtrlHistoriaClinica::class, 'show'])->whereNumber('paciente')->name('historiaClinica.show');
+    Route::get('/mi-historia-clinica', [CtrlHistoriaClinica::class, 'show'])->name('historiaClinica.mia');
+});
+
+// --- Solo Médico ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico'])->group(function () {
+    // CU20 – registrarAtencion() → @storeAtencion y @updateAtencion · agregarAntecedente() → @storeAntecedente
+    Route::post('/historia-clinica/{paciente}/atenciones', [CtrlHistoriaClinica::class, 'storeAtencion'])->whereNumber('paciente')->name('historiaClinica.storeAtencion');
+    Route::put('/atenciones/{registro}', [CtrlHistoriaClinica::class, 'updateAtencion'])->whereNumber('registro')->name('historiaClinica.updateAtencion');
+    Route::post('/historia-clinica/{paciente}/antecedentes', [CtrlHistoriaClinica::class, 'storeAntecedente'])->whereNumber('paciente')->name('historiaClinica.storeAntecedente');
 });

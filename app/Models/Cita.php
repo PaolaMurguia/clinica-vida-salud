@@ -190,6 +190,12 @@ class Cita extends Model
             ->get();
     }
 
+    /** CU20: indica si la cita ya tiene registro de atención (uno por cita, D7). */
+    public static function existeAtencion(int $citaId): bool
+    {
+        return RegistroAtencion::where('cita_id', $citaId)->exists();
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {

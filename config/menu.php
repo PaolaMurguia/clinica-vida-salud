@@ -34,6 +34,7 @@ return [
         'Paciente' => [
             ['texto' => 'Mi perfil',      'ruta' => 'perfil.show',                   'descripcion' => 'Datos, antecedentes y preferencias (CU11)'],
             ['texto' => 'Mis citas',      'ruta' => 'historialCitas.index',          'descripcion' => 'Historial, reprogramar y cancelar (CU19)'],
+            ['texto' => 'Mi historia clínica', 'ruta' => 'historiaClinica.mia',      'descripcion' => 'Atenciones, antecedentes y resultados (CU20)'],
             ['texto' => 'Disponibilidad', 'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y reservar una cita (CU13, CU14)'],
         ],
     ],

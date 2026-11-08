@@ -90,7 +90,7 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementación. Orden aplicado: CU14, CU19, CU16, CU15, CU17, CU18, CU25, CU24, CU20, CU22, CU21, CU23.
 
-**Último CU cerrado:** CU24.
+**Último CU cerrado:** CU20.
 
 ## Resumen por caso de uso
 
@@ -102,7 +102,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementaci�
 | CU17 | Registrar asistencia | Citas | `agenda` (botones confirmar, atender y registrar inasistencia; se agregan con CU18) | `Citas\CtrlCitas` → cambiarEstado() ✅ (parámetro `accion`, B2) | `Usuario` → puedeMarcarAtendida() ✅ · `Cita` → obtener(), cambiarEstado() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes() ✅ · `Bitacora` → registrar() ✅ | `PATCH /citas/{cita}/estado` (`citas.cambiarEstado`) | `Citas/RegistrarAsistenciaTest` (11) + `ConsultarAgendaTest::test_acciones_de_asistencia_segun_el_rol_y_la_hora` | ✅ |
 | CU18 | Consultar agenda médica | Citas | `agenda` (día o semana, filtros, bloqueos y acciones de CU17) | `Citas\CtrlAgenda` → index(), filtrar() ✅ | `Medico` → obtener(), listar() ✅ · `Cita` → listarAgenda() ✅ · `Bloqueo` → listarPorRango() ✅ | `GET /agenda` (`agenda.index`), `GET /agenda/filtrar` (`agenda.filtrar`, `medico_id`, `desde`, `hasta`, `vista`, `estado`) | `Citas/ConsultarAgendaTest` (13) | ✅ |
 | CU19 | Consultar historial de citas | Citas | `historialCitas` (lista con filtros y detalle); enlace «Historial de citas» en `buscarPaciente` y «Mis citas» en el portal | `Citas\CtrlHistorialCitas` → index(), show() ✅ | `Paciente` → obtener() ✅ · `Cita` → listarPorPaciente() ✅ (+ obtener() de CU15/CU16 en el detalle) · `HistorialCita` → listarPorCita() ✅ | `GET /historial-citas` (`historialCitas.index`, `?paciente_id=`, `estado`, `desde`, `hasta`), `GET /historial-citas/{cita}` (`historialCitas.show`) | `Citas/ConsultarHistorialCitasTest` (11) | ✅ |
-| CU20 | Gestionar historia clínica | Clinica | | | | | | ⬜ |
+| CU20 | Gestionar historia clínica | Clinica | `historiaClinica` (registro y modificación de la atención, antecedentes, exámenes); enlace desde `agenda`; «Mi historia clínica» en el portal | `Clinica\CtrlHistoriaClinica` → show(), storeAtencion(), updateAtencion(), storeAntecedente() ✅ | `Paciente` → obtener() ✅ · `Cita` → obtener(), existeAtencion() ✅ · `Historia` → obtener() ✅ · `Antecedente` → listar(), crear() ✅ · `RegistroAtencion` → obtenerPorCita(), listarPorPaciente(), crear(), actualizar() ✅ · `ExamenLaboratorio` → listarPorPaciente() ✅ · `Bitacora` → registrar() ✅ | `GET /historia-clinica/{paciente}` (`historiaClinica.show`, `?cita=`, `?editar=`), `GET /mi-historia-clinica` (`historiaClinica.mia`), `POST /historia-clinica/{paciente}/atenciones` (`historiaClinica.storeAtencion`), `PUT /atenciones/{registro}` (`historiaClinica.updateAtencion`), `POST /historia-clinica/{paciente}/antecedentes` (`historiaClinica.storeAntecedente`) | `Clinica/GestionarHistoriaClinicaTest` (13) | ✅ |
 | CU21 | Dictar registro clínico por voz | Clinica | | | | | | ⬜ |
 | CU22 | Gestionar resultados de laboratorio | Clinica | | | | | | ⬜ |
 | CU23 | Generar reportes | Administracion | | | | | | ⬜ |
