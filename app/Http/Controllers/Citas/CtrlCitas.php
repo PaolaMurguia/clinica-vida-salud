@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citas;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Citas\CancelarCitaRequest;
 use App\Http\Requests\Citas\CreateCitaRequest;
 use App\Http\Requests\Citas\StoreCitaRequest;
 use App\Models\Cita;
@@ -15,6 +16,7 @@ use App\Models\Paciente;
 use App\Services\ServicioBitacora;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -136,5 +138,67 @@ class CtrlCitas extends Controller
 
         return redirect()->route('citas.create', ['cita' => $cita->id])
             ->with('exito', "Cita {$cita->codigo} programada.");
+    }
+
+    /**
+     * CU16 – Cancelar cita (pasos 1 y 2, mostrar): datos de la cita y formulario del motivo y la
+     * confirmación. Si la cita no se puede cancelar (estado o plazo RN17), se muestra el motivo.
+     */
+    public function show(Request $request, Cita $cita): View
+    {
+        $cita = Cita::obtener($cita->id);
+        $propio = $request->user()->paciente_id;
+        abort_if($propio !== null && $cita->paciente_id !== $propio, 403);   // RN18
+
+        return view('cancelarCita', [
+            'cita'    => $cita,
+            'enPlazo' => $propio === null
+                || now()->addHours(Cita::PLAZO_PACIENTE_HORAS)->lte($cita->fecha->copy()->setTimeFromTimeString($cita->hora_inicio)),
+        ]);
+    }
+
+    /**
+     * CU16 – Cancelar cita (pasos 4 a 10, cancelar): dentro de una transacción verifica el estado, cancela
+     * la cita conservando el registro, libera la franja, registra el historial, anula los recordatorios,
+     * avisa al paciente y al médico y lo registra en la bitácora.
+     */
+    public function cancelar(CancelarCitaRequest $request, Cita $cita): RedirectResponse
+    {
+        $motivo = $request->validated('motivo_cancelacion');
+
+        $cancelada = DB::transaction(function () use ($cita, $motivo) {
+            // paso 5: se vuelve a leer la cita bloqueándola, por si otro usuario la cambió mientras tanto
+            $cita = Cita::whereKey($cita->id)->lockForUpdate()->first();
+            if (! in_array($cita->estado, Cita::VIGENTES, true)) {
+                return null;
+            }
+
+            $anterior = $cita->estado;
+            $cita->cancelar($motivo);                                         // pasos 6 y 7
+            HistorialCita::registrar($cita, $anterior, 'Cancelada', $motivo); // paso 8
+
+            // paso 9: anula los recordatorios y avisa al paciente y al médico (RF21)
+            Notificacion::anularPendientes($cita);
+            $cita = Cita::obtener($cita->id);
+            $mensaje = "La cita {$cita->codigo} del {$cita->fecha->format('d/m/Y')} a las " . substr($cita->hora_inicio, 0, 5)
+                . " ({$cita->especialidad->nombre}, {$cita->paciente->nombres} {$cita->paciente->apellidos}) fue cancelada. Motivo: $motivo";
+            foreach ([$cita->paciente->usuario, $cita->medico->usuario] as $destinatario) {
+                if ($destinatario) {
+                    Notificacion::programar($destinatario, 'Cancelacion', $mensaje, $cita);
+                }
+            }
+
+            return $cita;
+        });
+
+        if ($cancelada === null) {
+            return back()->with('error', 'La cita cambió de estado mientras tanto y ya no se puede cancelar.');
+        }
+
+        ServicioBitacora::registrar(ServicioBitacora::ACCION, 'CANCELAR', 'Citas', $cancelada->id,
+            "Cancelación de la cita {$cancelada->codigo}. Motivo: $motivo");
+
+        return redirect()->route('historialCitas.show', $cancelada)
+            ->with('exito', "Cita {$cancelada->codigo} cancelada. La franja quedó libre.");
     }
 }

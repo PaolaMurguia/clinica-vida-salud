@@ -195,6 +195,11 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // mostrar() → CtrlCitas@create (también el comprobante con ?cita=) · programar() → CtrlCitas@store
     Route::get('/citas/programar', [CtrlCitas::class, 'create'])->name('citas.create');
     Route::post('/citas', [CtrlCitas::class, 'store'])->name('citas.store');
+
+    // CU16 – Cancelar cita: UI_CancelarCita (V.cancelarCita)
+    // mostrar() → CtrlCitas@show · cancelar() → CtrlCitas@cancelar
+    Route::get('/citas/{cita}', [CtrlCitas::class, 'show'])->whereNumber('cita')->name('citas.show');
+    Route::patch('/citas/{cita}/cancelar', [CtrlCitas::class, 'cancelar'])->whereNumber('cita')->name('citas.cancelar');
 });
 
 // --- Recepcionista, Administrador y Paciente (el paciente solo su propio historial, RN18) ---

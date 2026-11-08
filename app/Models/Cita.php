@@ -137,6 +137,15 @@ class Cita extends Model
             ->withQueryString();
     }
 
+    /**
+     * CU16: cambia la cita a Cancelada y guarda el motivo; el registro no se elimina (RN10) y la franja
+     * queda libre (RN09). trg_validar_transicion rechaza cancelar una cita que no esté Programada o Confirmada.
+     */
+    public function cancelar(string $motivo): void
+    {
+        $this->update(['estado' => 'Cancelada', 'motivo_cancelacion' => mb_substr($motivo, 0, 200)]);
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {

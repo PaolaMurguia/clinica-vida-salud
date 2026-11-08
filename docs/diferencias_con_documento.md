@@ -175,3 +175,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU19 | Form Request `Citas/FiltrarHistorialCitasRequest` (como `FiltrarBitacoraRequest` de CU04). El rango de fechas no tiene límite de días. | El documento solo pide rechazar el rango invertido. | Aplicado. |
 | CU19 | Paginación de 20 citas por página. | Pacientes con muchas citas. | Aplicado. |
 | CU19 | Los botones «Reprogramar» y «Cancelar» aparecen solo para la recepcionista y el paciente, en citas Programadas o Confirmadas; para el paciente, solo si faltan al menos 2 horas (si no, el aviso de RN17). El administrador solo consulta. | Paso 5; actores de CU15 y CU16. Los botones se activan cuando existen las rutas de CU15 y CU16. | Aplicado. |
+
+### CU16 – Cancelar cita
+
+`CtrlCitas` suma show() y cancelar(), exactamente los de la tabla de CU16. Vista `cancelarCita`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU16 | Dentro de la transacción la cita se vuelve a leer con `lockForUpdate()` (B13) antes de cancelarla; si otro usuario la cambió, se informa «La cita cambió de estado mientras tanto». `trg_validar_transicion` respalda la regla. | Paso 5. | Aplicado. |
+| CU16 | La confirmación (paso 2) es un `confirm()` del navegador al enviar el formulario. | El documento pide confirmación sin fijar la forma. | Aplicado. |
+| CU16 | El aviso de cancelación incluye el motivo y va al paciente y al médico (si tienen cuenta). Solo se anulan los recordatorios (tipo Recordatorio) pendientes o fallidos. | Paso 9 y D3. | Aplicado. |
+| CU16 | La recepcionista puede cancelar sin el plazo de 2 horas; el paciente fuera de plazo ve el aviso de RN17 en lugar del formulario. Form Request `Citas/CancelarCitaRequest`. | RN17 aplica solo al portal. | Aplicado. |
+| CU16 | Tras cancelar se muestra el detalle de la cita en `historialCitas` (CU19). | Paso 10: «confirma la cancelación». | Aplicado. |
