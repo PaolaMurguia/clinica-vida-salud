@@ -90,7 +90,7 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementación. Orden aplicado: CU14, CU19, CU16, CU15, CU17, CU18, CU25, CU24, CU20, CU22, CU21, CU23.
 
-**Último CU cerrado:** CU18 (con los botones de CU17).
+**Último CU cerrado:** CU25.
 
 ## Resumen por caso de uso
 
@@ -107,7 +107,7 @@ Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementaci�
 | CU22 | Gestionar resultados de laboratorio | Clinica | | | | | | ⬜ |
 | CU23 | Generar reportes | Administracion | | | | | | ⬜ |
 | CU24 | Gestionar feriados y bloqueos | Administracion | | | | | | ⬜ |
-| CU25 | Registrar pago de consulta | Pagos | | | | | | ⬜ |
+| CU25 | Registrar pago de consulta | Pagos | `pagos` (pendientes y buscador por código, cobro, comprobante); «Cobrar» en `agenda` y en el detalle de `historialCitas` | `Pagos\CtrlPagos` → create(), store(), update(), show() ✅ | `Cita` → obtener() ✅ · `Especialidad` → obtenerCosto() ✅ · `Seguro` → obtenerVigente() ✅ (+ obtenerActivo() de CU11/CU12 para el aviso de seguro no vigente) · `Pago` → obtenerPorCita(), crear(), completar(), listarPendientes() ✅ · `Bitacora` → registrar() ✅ | `GET /pagos` (`pagos.create`, `?cita=` o `?codigo=`), `POST /pagos` (`pagos.store`), `GET /pagos/{pago}` (`pagos.show`), `PATCH /pagos/{pago}` (`pagos.update`) | `Pagos/RegistrarPagoTest` (10) | ✅ |
 
 ## Base común del ciclo 2
 

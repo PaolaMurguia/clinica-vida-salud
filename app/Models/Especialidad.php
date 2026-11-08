@@ -71,6 +71,12 @@ class Especialidad extends Model
         $this->update(['estado' => $activa]);
     }
 
+    /** CU25: costo de la consulta de la especialidad. */
+    public static function obtenerCosto(int $id): string
+    {
+        return (string) self::whereKey($id)->value('costo_consulta');
+    }
+
     /** CU13: especialidades activas cuyo rango de edad incluye la edad indicada (RN15). */
     public static function listarPorEdad(int $edad): Collection
     {

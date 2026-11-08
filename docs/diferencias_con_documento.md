@@ -224,3 +224,16 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU18 | El médico no ve el selector de médicos; si envía el id de otro médico, se rechaza (RN18). | Paso 1 y excepción 3. | Aplicado. |
 | CU18 | Botones por fila: la recepción ve «Confirmar» (Programada) e «Inasistencia» (desde la hora de inicio); el médico con permiso ve «Atendida» (desde la hora de inicio). Los enlaces a la historia clínica (CU20) y al cobro (CU25) aparecen cuando existen sus rutas. El administrador solo consulta. | Paso 5 y CU17 (D6). | Aplicado. |
 | CU18 | Se agregó «Agenda» al menú del administrador, la recepcionista y el médico (este último no tenía opciones). | `config/menu.php`. | Aplicado. |
+
+### CU25 – Registrar pago de consulta
+
+`CtrlPagos` tiene exactamente create(), store(), update() y show(). Vista `pagos` (mostrar, cobrar, dejarPendiente y completar).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU25 | create() sin cita muestra los pagos pendientes (`Pago::listarPendientes()`) y un buscador por código; con `?cita=` o `?codigo=` muestra el cobro. Si la cita ya tiene pago, lleva al comprobante existente (excepción 2). | Paso 1 («por su código») y postcondición (pendientes identificados). | Aplicado. |
+| CU25 | Form Requests `Pagos/CreateRequest`, `StoreRequest` y `UpdateRequest` (`<método>Request`, porque el módulo tiene un solo controlador, como en Disponibilidad). | Convención aprobada. | Aplicado. |
+| CU25 | Para avisar que el seguro no está vigente (excepción 3) se usa `Seguro::obtenerActivo()` (tabla de CU11/CU12). | El documento pide avisarlo. | Aplicado. |
+| CU25 | En pantalla, los montos se calculan con la misma fórmula de la columna generada; lo que se guarda lo calculan la base de datos (`monto_paciente`) y `trg_aplicar_cobertura` (porcentaje). El costo se toma de la especialidad al momento del cobro. | D11, RN19. | Aplicado. |
+| CU25 | Se cobra cualquier cita no cancelada (también Programada, Confirmada o Inasistencia). | Precondición: «la cita existe y no está Cancelada». | Aplicado. |
+| CU25 | La acción (cobrar o dejar pendiente) se envía con el botón pulsado (`accion`); JavaScript exige el método solo al cobrar. | Pasos 4 y 5. | Aplicado. |

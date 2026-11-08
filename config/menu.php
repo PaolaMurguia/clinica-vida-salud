@@ -25,6 +25,7 @@ return [
             ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',              'descripcion' => 'Por CI, nombre o apellido (CU09)'],
             ['texto' => 'Disponibilidad',  'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y programar cita (CU13, CU14)'],
             ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Citas del día y registro de asistencia (CU17, CU18)'],
+            ['texto' => 'Pagos',           'ruta' => 'pagos.create',                  'descripcion' => 'Cobro de consultas y pagos pendientes (CU25)'],
         ],
         'Médico' => [
             ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Mis citas del día o la semana (CU17, CU18)'],

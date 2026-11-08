@@ -16,6 +16,7 @@ use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
 use App\Http\Controllers\Pacientes\CtrlSeguros;
+use App\Http\Controllers\Pagos\CtrlPagos;
 use App\Models\Notificacion;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
@@ -229,4 +230,17 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // mostrar() → CtrlAgenda@index (hoy) · filtrar() → CtrlAgenda@filtrar (medico_id, desde, hasta, vista, estado)
     Route::get('/agenda', [CtrlAgenda::class, 'index'])->name('agenda.index');
     Route::get('/agenda/filtrar', [CtrlAgenda::class, 'filtrar'])->name('agenda.filtrar');
+});
+
+// =====================================================================
+// Módulo Pagos (ciclo 2): CU25 (solo Recepcionista)
+// =====================================================================
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista'])->group(function () {
+    // CU25 – Registrar pago de consulta: UI_Pagos (V.pagos)
+    // mostrar() → CtrlPagos@create (?cita= o ?codigo=; sin cita, pagos pendientes) · cobrar() y dejarPendiente() → @store
+    // completar() → @update · comprobante → @show
+    Route::get('/pagos', [CtrlPagos::class, 'create'])->name('pagos.create');
+    Route::post('/pagos', [CtrlPagos::class, 'store'])->name('pagos.store');
+    Route::get('/pagos/{pago}', [CtrlPagos::class, 'show'])->whereNumber('pago')->name('pagos.show');
+    Route::patch('/pagos/{pago}', [CtrlPagos::class, 'update'])->whereNumber('pago')->name('pagos.update');
 });

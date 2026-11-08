@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * Entidad SEGURO: seguro médico del paciente (tabla seguro_paciente, RF19). Un solo seguro activo.
@@ -43,6 +44,16 @@ class Seguro extends Model
     public static function obtenerActivo(int $pacienteId): ?self
     {
         return self::where('paciente_id', $pacienteId)->where('estado', true)->first();
+    }
+
+    /** CU25: seguro activo del paciente y vigente en la fecha de la cita (RN19), si existe. */
+    public static function obtenerVigente(int $pacienteId, Carbon $fecha): ?self
+    {
+        return self::where('paciente_id', $pacienteId)
+            ->where('estado', true)
+            ->whereDate('fecha_inicio', '<=', $fecha->toDateString())
+            ->whereDate('fecha_fin', '>=', $fecha->toDateString())
+            ->first();
     }
 
     /** CU12: da de baja el seguro (queda en el historial del paciente). */

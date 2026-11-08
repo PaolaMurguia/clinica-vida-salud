@@ -57,7 +57,12 @@
             </div>
             <dl class="row mb-0">
                 <dt class="col-sm-3">Fecha y horario</dt>
-                <dd class="col-sm-9">{{ ucfirst($cita->fecha->translatedFormat('l d/m/Y')) }}, {{ substr($cita->hora_inicio, 0, 5) }}–{{ substr($cita->hora_fin, 0, 5) }}</dd>
+                <dd class="col-sm-9">{{ ucfirst($cita->fecha->translatedFormat('l d/m/Y')) }}, {{ substr($cita->hora_inicio, 0, 5) }}–{{ substr($cita->hora_fin, 0, 5) }}
+                    {{-- CU25: cobro desde el historial (paso 1) --}}
+                    @if ($usuario->rol->nombre === 'Recepcionista' && $cita->estado !== 'Cancelada' && Route::has('pagos.create'))
+                        <a href="{{ route('pagos.create', ['cita' => $cita->id]) }}" class="btn btn-sm btn-outline-secondary ms-2 d-print-none">Cobrar</a>
+                    @endif
+                </dd>
                 <dt class="col-sm-3">Médico</dt>
                 <dd class="col-sm-9">{{ $cita->medico->apellidos }}, {{ $cita->medico->nombres }}</dd>
                 <dt class="col-sm-3">Especialidad</dt>
