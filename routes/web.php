@@ -8,6 +8,7 @@ use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
+use App\Http\Controllers\Citas\CtrlAgenda;
 use App\Http\Controllers\Citas\CtrlCitas;
 use App\Http\Controllers\Citas\CtrlHistorialCitas;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
@@ -220,4 +221,12 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     // CU17 – Registrar asistencia: UI_Agenda (V.agenda) confirmar(), atender(), registrarInasistencia()
     // → CtrlCitas@cambiarEstado con el parámetro accion (B2)
     Route::patch('/citas/{cita}/estado', [CtrlCitas::class, 'cambiarEstado'])->whereNumber('cita')->name('citas.cambiarEstado');
+});
+
+// --- Recepcionista, Médico y Administrador (el médico solo su propia agenda, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico,Administrador'])->group(function () {
+    // CU18 – Consultar agenda médica: UI_Agenda (V.agenda)
+    // mostrar() → CtrlAgenda@index (hoy) · filtrar() → CtrlAgenda@filtrar (medico_id, desde, hasta, vista, estado)
+    Route::get('/agenda', [CtrlAgenda::class, 'index'])->name('agenda.index');
+    Route::get('/agenda/filtrar', [CtrlAgenda::class, 'filtrar'])->name('agenda.filtrar');
 });

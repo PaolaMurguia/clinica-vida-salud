@@ -18,13 +18,17 @@ return [
             ['texto' => 'Horarios',       'ruta' => 'horarios.index',       'descripcion' => 'Horarios de atención (CU07)'],
             ['texto' => 'Pacientes',      'ruta' => 'pacientes.index',      'descripcion' => 'Registro de pacientes (CU08)'],
             ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',    'descripcion' => 'Por CI, nombre o apellido (CU09)'],
+            ['texto' => 'Agenda',         'ruta' => 'agenda.index',         'descripcion' => 'Citas de cada médico por día o semana (CU18)'],
         ],
         'Recepcionista' => [
             ['texto' => 'Pacientes',       'ruta' => 'pacientes.index',               'descripcion' => 'Registro de pacientes (CU08)'],
             ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',              'descripcion' => 'Por CI, nombre o apellido (CU09)'],
             ['texto' => 'Disponibilidad',  'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y programar cita (CU13, CU14)'],
+            ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Citas del día y registro de asistencia (CU17, CU18)'],
         ],
-        'Médico' => [],
+        'Médico' => [
+            ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Mis citas del día o la semana (CU17, CU18)'],
+        ],
         'Paciente' => [
             ['texto' => 'Mi perfil',      'ruta' => 'perfil.show',                   'descripcion' => 'Datos, antecedentes y preferencias (CU11)'],
             ['texto' => 'Mis citas',      'ruta' => 'historialCitas.index',          'descripcion' => 'Historial, reprogramar y cancelar (CU19)'],

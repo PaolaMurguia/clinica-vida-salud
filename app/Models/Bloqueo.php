@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * Entidad BLOQUEO: fechas sin atención (tabla bloqueo_agenda). medico_id nulo = toda la clínica.
@@ -35,5 +36,15 @@ class Bloqueo extends Model
         return self::whereDate('fecha', $fecha->toDateString())
             ->where(fn ($q) => $q->whereNull('medico_id')->orWhere('medico_id', $medicoId))
             ->first();
+    }
+
+    /** CU18: bloqueos del médico y de toda la clínica en el rango de fechas, con su motivo. */
+    public static function listarPorRango(int $medicoId, Carbon $desde, Carbon $hasta): Collection
+    {
+        return self::whereDate('fecha', '>=', $desde->toDateString())
+            ->whereDate('fecha', '<=', $hasta->toDateString())
+            ->where(fn ($q) => $q->whereNull('medico_id')->orWhere('medico_id', $medicoId))
+            ->orderBy('fecha')
+            ->get();
     }
 }

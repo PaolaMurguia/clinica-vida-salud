@@ -212,3 +212,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU17 | La recepcionista puede confirmar en cualquier momento antes del cambio a un estado final; Atendida e Inasistencia solo desde la hora de inicio (D6). El médico solo marca Atendida, y solo en sus citas. | Paso 2 y D6. | Aplicado. |
 | CU17 | Excepción 6 (dos usuarios a la vez): la transacción vuelve a leer la cita con `lockForUpdate()`; si su estado ya cambió, el segundo recibe «Transición no permitida: la cita ya cambió de estado». | Excepción 6. | Aplicado; probado. |
 | CU17 | `Usuario::puedeMarcarAtendida()` exige además que la cuenta sea de un médico y esté activa. | RN12. | Aplicado. |
+
+### CU18 – Consultar agenda médica
+
+`CtrlAgenda` tiene exactamente index() y filtrar(). Vista `agenda`, que también tiene los botones de CU17.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU18 | index() muestra el día de hoy delegando en filtrar() con los valores por defecto (no hay métodos nuevos). | Pasos 1 y 2. | Aplicado. |
+| CU18 | Filtros: médico, «desde», «hasta», vista (día o semana, que empieza el lunes) y estado. El rango máximo es de 31 días. Form Request `Citas/FiltrarAgendaRequest`. | Paso 2 y excepción 2; el documento no fija un máximo. | Aplicado. |
+| CU18 | El médico no ve el selector de médicos; si envía el id de otro médico, se rechaza (RN18). | Paso 1 y excepción 3. | Aplicado. |
+| CU18 | Botones por fila: la recepción ve «Confirmar» (Programada) e «Inasistencia» (desde la hora de inicio); el médico con permiso ve «Atendida» (desde la hora de inicio). Los enlaces a la historia clínica (CU20) y al cobro (CU25) aparecen cuando existen sus rutas. El administrador solo consulta. | Paso 5 y CU17 (D6). | Aplicado. |
+| CU18 | Se agregó «Agenda» al menú del administrador, la recepcionista y el médico (este último no tenía opciones). | `config/menu.php`. | Aplicado. |

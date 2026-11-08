@@ -167,6 +167,18 @@ class Cita extends Model
         $this->update(['estado' => $estado]);
     }
 
+    /** CU18: citas del médico en el rango, ordenadas por fecha y hora, con filtro opcional de estado. */
+    public static function listarAgenda(int $medicoId, Carbon $desde, Carbon $hasta, ?string $estado = null): Collection
+    {
+        return self::with(['paciente', 'especialidad'])
+            ->where('medico_id', $medicoId)
+            ->whereDate('fecha', '>=', $desde->toDateString())
+            ->whereDate('fecha', '<=', $hasta->toDateString())
+            ->when($estado, fn ($q) => $q->where('estado', $estado))
+            ->orderBy('fecha')->orderBy('hora_inicio')
+            ->get();
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {
