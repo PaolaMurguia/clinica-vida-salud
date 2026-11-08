@@ -263,3 +263,18 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU20 | La fecha de modificación de la historia se actualiza con `Historia::obtener()->update()` (B13) al registrar o modificar una atención, porque `trg_tocar_historia` solo se dispara con los antecedentes. | Paso 5. | Aplicado. |
 | CU20 | El médico puede registrar los seis tipos de antecedente (incluidos «Cirugía» y «Otro»); el paciente sigue con los cuatro de CU11. | Paso 6 y decisión de CU11. | Aplicado. |
 | CU20 | Form Requests `Clinica/StoreAtencionRequest`, `UpdateAtencionRequest` y `StoreAntecedenteRequest` (mismo nombre que el de Pacientes, en otro módulo). | Convención de Form Requests. | Aplicado. |
+
+### CU22 – Gestionar resultados de laboratorio
+
+`CtrlExamenes` tiene exactamente index(), store(), registrarResultados(), show() y marcarRevisado(). Vista `examenes`; solicitar() está en `historiaClinica` (paso 1: «desde la historia clínica»).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU22 | index() según el rol: la recepcionista busca por código o CI/nombre (`ExamenLaboratorio::buscar()`; sin criterio, los Solicitados pendientes); el médico ve sus solicitudes (Registrados primero, consulta Eloquent B13); el paciente, sus exámenes Registrados o Revisados (`listarPorPaciente()`). | Pasos 3, 8 y 9. | Aplicado. |
+| CU22 | Los valores se envían como `valores[nombre del parámetro]`; el Form Request `Clinica/RegistrarResultadosRequest` usa `ParametroLaboratorio::obtenerPorNombre()` y `RangoReferencia::obtenerPorEdad()`; se acepta la coma decimal y se ignoran los campos vacíos. | Paso 5 y excepciones 3 a 7. | Aplicado. |
+| CU22 | `ResultadoLaboratorio::registrar()` guarda el rango y la interpretación calculados con el modelo; `trg_interpretar_resultado` los vuelve a calcular en la base de datos (red de seguridad, D1). | Paso 6 y RN16. | Aplicado. |
+| CU22 | Un examen Registrado admite agregar parámetros nuevos con la misma fecha de muestra (no se cambia la fecha); uno Revisado no se modifica. | Paso 5 («que el examen no esté revisado»). | Aplicado. |
+| CU22 | Acceso: el paciente solo ve sus exámenes con resultados (D8); el médico, los que solicitó o los de pacientes que atiende (RN18); solo el médico solicitante marca Revisado. La recepción ve los valores (no son diagnósticos). | RN18, RN20. | Aplicado. |
+| CU22 | Si el examen tiene cita, la notificación «Resultado» se asocia a ella; si no, va sin cita. | La columna `notificacion.cita_id` es opcional. | Aplicado. |
+| CU22 | Form Request `Clinica/StoreExamenRequest` (solo un médico que atiende al paciente, RN20 y RN18). marcarRevisado() no tiene Form Request (no recibe datos); valida en el controlador y responde con un mensaje. | Convención de CU03 (`restablecerClave()`). | Aplicado. |
+| CU22 | Se agregó «Laboratorio» al menú de la recepcionista y del médico, y «Mis resultados» al portal. | Acceso a la vista. | Aplicado. |

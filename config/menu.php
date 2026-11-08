@@ -27,14 +27,17 @@ return [
             ['texto' => 'Disponibilidad',  'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y programar cita (CU13, CU14)'],
             ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Citas del día y registro de asistencia (CU17, CU18)'],
             ['texto' => 'Pagos',           'ruta' => 'pagos.create',                  'descripcion' => 'Cobro de consultas y pagos pendientes (CU25)'],
+            ['texto' => 'Laboratorio',     'ruta' => 'examenes.index',                'descripcion' => 'Registrar resultados de exámenes (CU22)'],
         ],
         'Médico' => [
             ['texto' => 'Agenda',          'ruta' => 'agenda.index',                  'descripcion' => 'Mis citas del día o la semana (CU17, CU18)'],
+            ['texto' => 'Laboratorio',     'ruta' => 'examenes.index',                'descripcion' => 'Exámenes solicitados y por revisar (CU22)'],
         ],
         'Paciente' => [
             ['texto' => 'Mi perfil',      'ruta' => 'perfil.show',                   'descripcion' => 'Datos, antecedentes y preferencias (CU11)'],
             ['texto' => 'Mis citas',      'ruta' => 'historialCitas.index',          'descripcion' => 'Historial, reprogramar y cancelar (CU19)'],
             ['texto' => 'Mi historia clínica', 'ruta' => 'historiaClinica.mia',      'descripcion' => 'Atenciones, antecedentes y resultados (CU20)'],
+            ['texto' => 'Mis resultados', 'ruta' => 'examenes.index',                'descripcion' => 'Resultados de laboratorio (CU22)'],
             ['texto' => 'Disponibilidad', 'ruta' => 'disponibilidad.especialidades', 'descripcion' => 'Franjas libres y reservar una cita (CU13, CU14)'],
         ],
     ],

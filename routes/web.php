@@ -12,6 +12,7 @@ use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Citas\CtrlAgenda;
 use App\Http\Controllers\Citas\CtrlCitas;
 use App\Http\Controllers\Citas\CtrlHistorialCitas;
+use App\Http\Controllers\Clinica\CtrlExamenes;
 use App\Http\Controllers\Clinica\CtrlHistoriaClinica;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
@@ -272,4 +273,25 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:M
     Route::post('/historia-clinica/{paciente}/atenciones', [CtrlHistoriaClinica::class, 'storeAtencion'])->whereNumber('paciente')->name('historiaClinica.storeAtencion');
     Route::put('/atenciones/{registro}', [CtrlHistoriaClinica::class, 'updateAtencion'])->whereNumber('registro')->name('historiaClinica.updateAtencion');
     Route::post('/historia-clinica/{paciente}/antecedentes', [CtrlHistoriaClinica::class, 'storeAntecedente'])->whereNumber('paciente')->name('historiaClinica.storeAntecedente');
+});
+
+// --- Recepcionista, Médico y Paciente ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico,Paciente'])->group(function () {
+    // CU22 – Gestionar resultados de laboratorio: UI_Examenes (V.examenes)
+    // buscar() → CtrlExamenes@index · verResultados() → @show (RN18 en el controlador)
+    Route::get('/examenes', [CtrlExamenes::class, 'index'])->name('examenes.index');
+    Route::get('/examenes/{examen}', [CtrlExamenes::class, 'show'])->whereNumber('examen')->name('examenes.show');
+});
+
+// --- CU22: solo el médico solicita y revisa (RN20) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico'])->group(function () {
+    // solicitar() → CtrlExamenes@store (desde V.historiaClinica) · marcarRevisado() → @marcarRevisado
+    Route::post('/examenes', [CtrlExamenes::class, 'store'])->name('examenes.store');
+    Route::patch('/examenes/{examen}/revisado', [CtrlExamenes::class, 'marcarRevisado'])->whereNumber('examen')->name('examenes.marcarRevisado');
+});
+
+// --- CU22: la recepcionista registra los resultados (RN20) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista'])->group(function () {
+    // registrarResultados() → CtrlExamenes@registrarResultados
+    Route::post('/examenes/{examen}/resultados', [CtrlExamenes::class, 'registrarResultados'])->whereNumber('examen')->name('examenes.registrarResultados');
 });

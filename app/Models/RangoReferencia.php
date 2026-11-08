@@ -29,4 +29,13 @@ class RangoReferencia extends Model
     {
         return $this->belongsTo(ParametroLaboratorio::class, 'parametro_id');
     }
+
+    /** CU22: rango del parámetro que corresponde a la edad (RN16; los rangos no se superponen, ex_rango_no_solapado). */
+    public static function obtenerPorEdad(int $parametroId, int $edad): ?self
+    {
+        return self::where('parametro_id', $parametroId)
+            ->where('edad_minima', '<=', $edad)
+            ->where('edad_maxima', '>=', $edad)
+            ->first();
+    }
 }

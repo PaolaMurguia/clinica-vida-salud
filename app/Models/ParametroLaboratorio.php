@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * Entidad PARAMETRO_LABORATORIO: parámetros que se miden en los análisis.
@@ -28,5 +29,17 @@ class ParametroLaboratorio extends Model
     public function resultados(): HasMany
     {
         return $this->hasMany(ResultadoLaboratorio::class, 'parametro_id');
+    }
+
+    /** CU22: parámetros activos ordenados por nombre (formulario de resultados). */
+    public static function listar(): Collection
+    {
+        return self::where('estado', true)->orderBy('nombre')->get();
+    }
+
+    /** CU22: parámetro por su nombre (activo o no), o null si no existe. */
+    public static function obtenerPorNombre(string $nombre): ?self
+    {
+        return self::where('nombre', trim($nombre))->first();
     }
 }

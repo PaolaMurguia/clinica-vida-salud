@@ -164,6 +164,25 @@
     <div class="col-lg-6">
         {{-- Exámenes de laboratorio (CU22); el paciente ve los que tienen resultados (D8) --}}
         <h2 class="h5">Exámenes de laboratorio</h2>
+        @if ($esMedico && Route::has('examenes.store'))
+            {{-- CU22 – solicitar(): paso 1, desde la historia clínica --}}
+            <form method="POST" action="{{ route('examenes.store') }}" class="card card-body shadow-sm border-0 mb-3" data-validar novalidate>
+                @csrf
+                <input type="hidden" name="paciente_id" value="{{ $paciente->id }}">
+                @if ($citaElegida) <input type="hidden" name="cita_id" value="{{ $citaElegida }}"> @endif
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label for="tipo_examen" class="form-label">Solicitar análisis</label>
+                        <input type="text" id="tipo_examen" name="tipo_examen" maxlength="60" required placeholder="Hemograma, perfil lipídico…" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="observacion" class="form-label">Observación (opcional)</label>
+                        <input type="text" id="observacion" name="observacion" maxlength="200" class="form-control">
+                    </div>
+                    <div class="col-md-3"><button type="submit" class="btn btn-outline-primary w-100">Solicitar</button></div>
+                </div>
+            </form>
+        @endif
         @if ($examenes->isEmpty())
             <p class="text-muted">Sin exámenes.</p>
         @else
