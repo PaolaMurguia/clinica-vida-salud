@@ -4,6 +4,7 @@ use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use App\Http\Controllers\Administracion\CtrlBitacora;
+use App\Http\Controllers\Administracion\CtrlBloqueos;
 use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
@@ -98,7 +99,7 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal'])->grou
 });
 
 // =====================================================================
-// Módulo Administración: CU03, CU04, CU05, CU06, CU07 (solo Administrador)
+// Módulo Administración: CU03, CU04, CU05, CU06, CU07; ciclo 2: CU23, CU24 (solo Administrador)
 // =====================================================================
 Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Administrador'])->group(function () {
     // CU03 – Gestionar usuarios y roles: UI_Usuarios (V.usuarios) → CtrlUsuarios
@@ -131,6 +132,13 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::get('/horarios', [CtrlHorarios::class, 'index'])->name('horarios.index');
     Route::post('/horarios', [CtrlHorarios::class, 'store'])->name('horarios.store');
     Route::patch('/horarios/{horario}/estado', [CtrlHorarios::class, 'cambiarEstado'])->name('horarios.cambiarEstado');
+
+    // --- Ciclo 2 ---
+    // CU24 – Gestionar feriados y bloqueos: UI_Bloqueos (V.bloqueos) → CtrlBloqueos (sin edición, D10)
+    // mostrar() → index (medico_id, desde, hasta) · agregar() → store (confirmar si hay citas) · eliminar() → destroy
+    Route::get('/bloqueos', [CtrlBloqueos::class, 'index'])->name('bloqueos.index');
+    Route::post('/bloqueos', [CtrlBloqueos::class, 'store'])->name('bloqueos.store');
+    Route::delete('/bloqueos/{bloqueo}', [CtrlBloqueos::class, 'destroy'])->whereNumber('bloqueo')->name('bloqueos.destroy');
 });
 
 // =====================================================================

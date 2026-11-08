@@ -179,6 +179,17 @@ class Cita extends Model
             ->get();
     }
 
+    /** CU24: citas no canceladas de la fecha, del médico o de toda la clínica (medico_id nulo). */
+    public static function listarPorFecha(Carbon $fecha, ?int $medicoId = null): Collection
+    {
+        return self::with(['paciente', 'medico'])
+            ->whereDate('fecha', $fecha->toDateString())
+            ->where('estado', '<>', 'Cancelada')
+            ->when($medicoId, fn ($q) => $q->where('medico_id', $medicoId))
+            ->orderBy('hora_inicio')
+            ->get();
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {

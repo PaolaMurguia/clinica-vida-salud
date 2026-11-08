@@ -237,3 +237,15 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU25 | En pantalla, los montos se calculan con la misma fórmula de la columna generada; lo que se guarda lo calculan la base de datos (`monto_paciente`) y `trg_aplicar_cobertura` (porcentaje). El costo se toma de la especialidad al momento del cobro. | D11, RN19. | Aplicado. |
 | CU25 | Se cobra cualquier cita no cancelada (también Programada, Confirmada o Inasistencia). | Precondición: «la cita existe y no está Cancelada». | Aplicado. |
 | CU25 | La acción (cobrar o dejar pendiente) se envía con el botón pulsado (`accion`); JavaScript exige el método solo al cobrar. | Pasos 4 y 5. | Aplicado. |
+
+### CU24 – Gestionar feriados y bloqueos
+
+`CtrlBloqueos` tiene exactamente index(), store() y destroy(). Vista `bloqueos`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU24 | La confirmación con citas existentes (paso 5) es un segundo envío: el primero vuelve con la lista de citas (`Cita::listarPorFecha()`) y el botón «Confirmar el bloqueo», que reenvía con `confirmar=1`. Al guardar, un aviso recuerda reprogramar o cancelar esas citas. | Paso 5 y D10. | Aplicado. |
+| CU24 | Un bloqueo de toda la clínica y uno de un médico pueden coexistir en la misma fecha; el duplicado es solo con la misma fecha y el mismo ámbito (`Bloqueo::existe()`, respaldado por `uq_bloqueo`). | Excepción 1 y la restricción UNIQUE NULLS NOT DISTINCT. | Aplicado. |
+| CU24 | Filtro de médico con la opción «Toda la clínica» (`medico_id=clinica`). Form Requests `Administracion/StoreBloqueoRequest` y `FiltrarBloqueosRequest`. | Paso 1. | Aplicado. |
+| CU24 | La eliminación pide confirmación con `confirm()` del navegador; se permite eliminar cualquier bloqueo (también de fechas pasadas). | Paso 7; el documento no restringe la fecha. | Aplicado. |
+| CU24 | La bitácora del bloqueo de un médico usa `Medico::obtener()` (tabla de CU03/CU07) para el código del médico. | Descripción legible en CU04. | Aplicado. |
