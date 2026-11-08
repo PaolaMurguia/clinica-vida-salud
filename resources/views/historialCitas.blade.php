@@ -86,7 +86,13 @@
                 @foreach ($historial as $cambio)
                     <tr>
                         <td class="text-nowrap">{{ $cambio->fecha_cambio->format('d/m/Y H:i') }}</td>
-                        <td>{{ $cambio->estado_anterior ? $cambio->estado_anterior . ' → ' : '' }}{{ $cambio->estado_nuevo }}</td>
+                        <td>
+                            @if ($cambio->estado_anterior === $cambio->estado_nuevo)
+                                Reprogramación ({{ $cambio->estado_nuevo }})
+                            @else
+                                {{ $cambio->estado_anterior ? $cambio->estado_anterior . ' → ' : '' }}{{ $cambio->estado_nuevo }}
+                            @endif
+                        </td>
                         <td>{{ $cambio->usuario->nombre_usuario }}</td>
                         <td>{{ $cambio->observacion ?? '—' }}</td>
                     </tr>

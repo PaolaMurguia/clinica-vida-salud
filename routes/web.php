@@ -196,6 +196,11 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:R
     Route::get('/citas/programar', [CtrlCitas::class, 'create'])->name('citas.create');
     Route::post('/citas', [CtrlCitas::class, 'store'])->name('citas.store');
 
+    // CU15 – Reprogramar cita: UI_ReprogramarCita (V.reprogramarCita)
+    // mostrar() → CtrlCitas@edit (?fecha=) · reprogramar() → CtrlCitas@update
+    Route::get('/citas/{cita}/reprogramar', [CtrlCitas::class, 'edit'])->whereNumber('cita')->name('citas.edit');
+    Route::put('/citas/{cita}', [CtrlCitas::class, 'update'])->whereNumber('cita')->name('citas.update');
+
     // CU16 – Cancelar cita: UI_CancelarCita (V.cancelarCita)
     // mostrar() → CtrlCitas@show · cancelar() → CtrlCitas@cancelar
     Route::get('/citas/{cita}', [CtrlCitas::class, 'show'])->whereNumber('cita')->name('citas.show');

@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Citas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Citas\CancelarCitaRequest;
 use App\Http\Requests\Citas\CreateCitaRequest;
+use App\Http\Requests\Citas\EditCitaRequest;
 use App\Http\Requests\Citas\StoreCitaRequest;
+use App\Http\Requests\Citas\UpdateCitaRequest;
+use App\Models\Bloqueo;
 use App\Models\Cita;
 use App\Models\Especialidad;
 use App\Models\HistorialCita;
@@ -138,6 +141,116 @@ class CtrlCitas extends Controller
 
         return redirect()->route('citas.create', ['cita' => $cita->id])
             ->with('exito', "Cita {$cita->codigo} programada.");
+    }
+
+    /**
+     * CU15 – Reprogramar cita (pasos 1 a 3, mostrar): datos actuales de la cita y franjas del mismo médico
+     * en la fecha elegida (bloqueo, horario del día, franjas y ocupadas, como en CU13).
+     */
+    public function edit(EditCitaRequest $request, Cita $cita): View
+    {
+        $cita = Cita::obtener($cita->id);
+        $propio = $request->user()->paciente_id;
+        abort_if($propio !== null && $cita->paciente_id !== $propio, 403);   // RN18
+
+        $fecha = $request->validated('fecha') ? Carbon::createFromFormat('Y-m-d', $request->validated('fecha'))->startOfDay() : null;
+        $medico = Medico::obtener($cita->medico_id);
+        $resultado = null;
+        if ($fecha && $medico->estado) {
+            $bloqueo = Bloqueo::estaBloqueada($medico->id, $fecha);
+            $horarios = $bloqueo ? collect() : Horario::obtenerDelDia($medico->id, $fecha);
+            $ocupadas = Cita::listarOcupadas($medico->id, $fecha);
+            $esActual = fn (array $franja) => $cita->fecha->isSameDay($fecha) && substr($cita->hora_inicio, 0, 5) === $franja['inicio'];
+            $resultado = [
+                'bloqueo' => $bloqueo,
+                'atiende' => $bloqueo || $horarios->isNotEmpty(),
+                'franjas' => $horarios
+                    ->flatMap(fn (Horario $horario) => $horario->generarFranjas())
+                    ->reject(fn (array $franja) => $fecha->copy()->setTimeFromTimeString($franja['inicio'])->lte(now()))
+                    ->map(fn (array $franja) => $franja + [
+                        'estado' => match (true) {
+                            $esActual($franja) => 'actual',
+                            $ocupadas->contains(fn ($otra) => substr($otra->hora_inicio, 0, 5) < $franja['fin'] && substr($otra->hora_fin, 0, 5) > $franja['inicio']) => 'ocupada',
+                            default => 'libre',
+                        },
+                    ])->values()->all(),
+            ];
+        }
+
+        return view('reprogramarCita', [
+            'cita'      => $cita,
+            'medico'    => $medico,
+            'fecha'     => $fecha,
+            'resultado' => $resultado,
+            'enPlazo'   => $propio === null
+                || now()->addHours(Cita::PLAZO_PACIENTE_HORAS)->lte($cita->fecha->copy()->setTimeFromTimeString($cita->hora_inicio)),
+        ]);
+    }
+
+    /**
+     * CU15 – Reprogramar cita (pasos 5 a 10, reprogramar): dentro de una transacción verifica de nuevo la
+     * franja sin contar la propia cita, cambia la fecha y el horario, registra el historial, renueva el
+     * recordatorio, avisa al paciente y al médico y muestra el comprobante actualizado.
+     */
+    public function update(UpdateCitaRequest $request, Cita $cita): RedirectResponse
+    {
+        $datos = $request->validated();
+        $fecha = Carbon::createFromFormat('Y-m-d', $datos['fecha'])->startOfDay();
+        $anterior = $cita->fecha->format('d/m/Y') . ' ' . substr($cita->hora_inicio, 0, 5);
+
+        try {
+            $reprogramada = DB::transaction(function () use ($cita, $datos, $fecha, $anterior) {
+                $cita = Cita::whereKey($cita->id)->lockForUpdate()->first();
+                $franja = Horario::obtenerDelDia($cita->medico_id, $fecha)
+                    ->flatMap(fn (Horario $horario) => $horario->generarFranjas())
+                    ->firstWhere('inicio', $datos['hora_inicio']);
+                if (! in_array($cita->estado, Cita::VIGENTES, true) || ! $franja
+                    || Cita::existeConflicto($cita->medico_id, $fecha, $franja['inicio'], $franja['fin'], $cita->id)) {
+                    return null;
+                }
+
+                $cita->reprogramar($fecha, $franja['inicio'], $franja['fin']);                // paso 7
+                $nueva = $fecha->format('d/m/Y') . ' ' . $franja['inicio'];
+                HistorialCita::registrar($cita, $cita->estado, $cita->estado, "Reprogramada del $anterior al $nueva"); // paso 8
+
+                // paso 9: recordatorio nuevo (RN21) y aviso de reprogramación (RF21)
+                Notificacion::anularPendientes($cita);
+                $cita = Cita::obtener($cita->id);
+                $detalle = "({$cita->especialidad->nombre}, {$cita->paciente->nombres} {$cita->paciente->apellidos})";
+                if ($cita->paciente->usuario) {
+                    Notificacion::programar($cita->paciente->usuario, 'Recordatorio',
+                        "Recuerde su cita {$cita->codigo} el $nueva $detalle.", $cita,
+                        $fecha->copy()->setTimeFromTimeString($franja['inicio'])->subDay());
+                }
+                foreach ([$cita->paciente->usuario, $cita->medico->usuario] as $destinatario) {
+                    if ($destinatario) {
+                        Notificacion::programar($destinatario, 'Reprogramacion',
+                            "La cita {$cita->codigo} $detalle se reprogramó del $anterior al $nueva.", $cita);
+                    }
+                }
+
+                return $cita;
+            });
+        } catch (QueryException $e) {
+            // la restricción ex_cita_no_solapada rechazó la nueva franja (otro usuario la ocupó)
+            if (($e->errorInfo[0] ?? null) !== '23P01') {
+                throw $e;
+            }
+            report($e);
+            $reprogramada = null;
+        }
+
+        if ($reprogramada === null) {
+            return redirect()->route('citas.edit', ['cita' => $cita->id, 'fecha' => $fecha->toDateString()])
+                ->with('error', 'La franja ya fue ocupada o la cita cambió mientras tanto. Elija otra franja libre.');
+        }
+
+        ServicioBitacora::registrar(ServicioBitacora::ACCION, 'REPROGRAMAR', 'Citas', $reprogramada->id,
+            "Reprogramación de la cita {$reprogramada->codigo} del $anterior al {$fecha->format('d/m/Y')} " . substr($reprogramada->hora_inicio, 0, 5));
+
+        // paso 10: comprobante actualizado
+        return redirect()->route('citas.create', ['cita' => $reprogramada->id])
+            ->with('exito', "Cita {$reprogramada->codigo} reprogramada.");
     }
 
     /**

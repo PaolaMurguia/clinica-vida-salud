@@ -90,14 +90,14 @@ Los modelos del ciclo 2 (`HistorialCita`, `Pago`, `RegistroAtencion`, `Parametro
 
 Relaciona cada caso de uso de `docs/casos_de_uso_ciclo2.md` con su implementación. Orden aplicado: CU14, CU19, CU16, CU15, CU17, CU18, CU25, CU24, CU20, CU22, CU21, CU23.
 
-**Último CU cerrado:** CU16.
+**Último CU cerrado:** CU15.
 
 ## Resumen por caso de uso
 
 | CU | Nombre | Módulo | Vista | Controlador → métodos | Modelos → métodos | Ruta | Test | Estado |
 |---|---|---|---|---|---|---|---|---|
 | CU14 | Programar cita | Citas | `programarCita` (resumen y comprobante con `?cita=`); franjas libres de `disponibilidad` enlazadas | `Citas\CtrlCitas` → create(), store() ✅ | `Paciente` → obtener() ✅ · `Especialidad` → listarPorEdad() ✅ · `Medico` → obtener() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `Cita` → existeConflicto(), crear() ✅ (+ obtener() de CU15 para el comprobante) · `HistorialCita` → registrar() ✅ · `Notificacion` → programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/programar` (`citas.create`), `POST /citas` (`citas.store`) | `Citas/ProgramarCitaTest` (19) | ✅ |
-| CU15 | Reprogramar cita | Citas | | | | | | ⬜ |
+| CU15 | Reprogramar cita | Citas | `reprogramarCita` (fecha y franjas del mismo médico); comprobante actualizado en `programarCita` | `Citas\CtrlCitas` → edit(), update() ✅ | `Cita` → obtener(), existeConflicto(), reprogramar() ✅ (+ listarOcupadas() de CU13 para mostrar las ocupadas) · `Medico` → obtener() ✅ · `Bloqueo` → estaBloqueada() ✅ · `Horario` → obtenerDelDia(), generarFranjas() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes(), programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/{cita}/reprogramar` (`citas.edit`, `?fecha=`), `PUT /citas/{cita}` (`citas.update`) | `Citas/ReprogramarCitaTest` (12) | ✅ |
 | CU16 | Cancelar cita | Citas | `cancelarCita` (desde el detalle de `historialCitas`) | `Citas\CtrlCitas` → show(), cancelar() ✅ | `Cita` → obtener(), cancelar() ✅ · `HistorialCita` → registrar() ✅ · `Notificacion` → anularPendientes(), programar() ✅ · `Bitacora` → registrar() ✅ | `GET /citas/{cita}` (`citas.show`), `PATCH /citas/{cita}/cancelar` (`citas.cancelar`) | `Citas/CancelarCitaTest` (8) | ✅ |
 | CU17 | Registrar asistencia | Citas | | | | | | ⬜ |
 | CU18 | Consultar agenda médica | Citas | | | | | | ⬜ |

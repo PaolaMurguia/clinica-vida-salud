@@ -146,6 +146,15 @@ class Cita extends Model
         $this->update(['estado' => 'Cancelada', 'motivo_cancelacion' => mb_substr($motivo, 0, 200)]);
     }
 
+    /**
+     * CU15: cambia la fecha y el horario; conserva el código, el paciente, el médico, la especialidad y el
+     * estado. trg_validar_cita vuelve a validar la nueva franja y ex_cita_no_solapada la superposición.
+     */
+    public function reprogramar(Carbon $fecha, string $horaInicio, string $horaFin): void
+    {
+        $this->update(['fecha' => $fecha->toDateString(), 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin]);
+    }
+
     /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
     public static function crear(array $datos): self
     {

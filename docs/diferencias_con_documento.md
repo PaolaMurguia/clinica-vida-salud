@@ -187,3 +187,16 @@ Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora
 | CU16 | El aviso de cancelación incluye el motivo y va al paciente y al médico (si tienen cuenta). Solo se anulan los recordatorios (tipo Recordatorio) pendientes o fallidos. | Paso 9 y D3. | Aplicado. |
 | CU16 | La recepcionista puede cancelar sin el plazo de 2 horas; el paciente fuera de plazo ve el aviso de RN17 en lugar del formulario. Form Request `Citas/CancelarCitaRequest`. | RN17 aplica solo al portal. | Aplicado. |
 | CU16 | Tras cancelar se muestra el detalle de la cita en `historialCitas` (CU19). | Paso 10: «confirma la cancelación». | Aplicado. |
+
+### CU15 – Reprogramar cita
+
+`CtrlCitas` suma edit() y update(), exactamente los de la tabla de CU15. Vista `reprogramarCita`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU15 | Para mostrar las franjas ocupadas, edit() usa `Cita::listarOcupadas()` (tabla de CU13); la propia cita se marca como «actual». El cálculo es una expresión dentro de edit(), sin métodos nuevos. | Paso 2: «fechas y franjas libres del mismo médico (CU13)». | Aplicado. |
+| CU15 | Form Requests `EditCitaRequest` (fecha a consultar) y `UpdateCitaRequest`, que hereda de `CreateCitaRequest` y reutiliza `validarFranja()` sin contar la propia cita. El paciente, el médico y la especialidad se toman siempre de la cita (no del formulario). | Paso 7 y convención de Form Requests. | Aplicado. |
+| CU15 | El historial guarda la reprogramación con estado anterior = estado nuevo y la observación «Reprogramada del dd/mm/aaaa hh:mm al dd/mm/aaaa hh:mm»; en `historialCitas` se muestra como «Reprogramación». | Paso 8: «con el usuario responsable y la nueva fecha»; la tabla no tiene columnas de fechas. | Aplicado. |
+| CU15 | El comprobante actualizado (paso 10) es el de CU14 (`programarCita` con `?cita=`). | Mismo comprobante, sin otra vista. | Aplicado. |
+| CU15 | D2: si la restricción EXCLUDE rechaza la nueva franja, se vuelve a `reprogramarCita` con la misma fecha y el aviso. Dentro de la transacción la cita se lee con `lockForUpdate()` (B13). | Excepción 3. | Aplicado. |
+| CU15 | Con el médico inactivo, la vista no ofrece franjas e indica cancelar y programar otra cita. | Excepciones 5 y 7. | Aplicado. |
