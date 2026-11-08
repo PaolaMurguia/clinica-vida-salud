@@ -190,6 +190,33 @@ class Cita extends Model
             ->get();
     }
 
+    /**
+     * CU23: citas para los reportes (solo lectura, consultas parametrizadas), ordenadas por fecha, médico y hora.
+     * Filtros opcionales: desde, hasta, medico_id, especialidad_id y estado (uno o varios).
+     */
+    public static function listarReporte(array $filtros): Collection
+    {
+        return self::with(['paciente', 'medico', 'especialidad'])
+            ->when($filtros['desde'] ?? null, fn ($q, $desde) => $q->whereDate('fecha', '>=', $desde))
+            ->when($filtros['hasta'] ?? null, fn ($q, $hasta) => $q->whereDate('fecha', '<=', $hasta))
+            ->when($filtros['medico_id'] ?? null, fn ($q, $medico) => $q->where('medico_id', $medico))
+            ->when($filtros['especialidad_id'] ?? null, fn ($q, $especialidad) => $q->where('especialidad_id', $especialidad))
+            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->whereIn('estado', (array) $estado))
+            ->orderBy('fecha')->orderBy('medico_id')->orderBy('hora_inicio')
+            ->get();
+    }
+
+    /**
+     * CU23: cantidad de citas por estado con los mismos filtros del reporte; los estados pedidos sin citas valen 0.
+     */
+    public static function contarPorEstado(array $filtros): Collection
+    {
+        $conteo = self::listarReporte($filtros)->countBy('estado');
+
+        return collect((array) ($filtros['estado'] ?? self::ESTADOS))
+            ->mapWithKeys(fn (string $estado) => [$estado => (int) ($conteo[$estado] ?? 0)]);
+    }
+
     /** CU20: indica si la cita ya tiene registro de atención (uno por cita, D7). */
     public static function existeAtencion(int $citaId): bool
     {

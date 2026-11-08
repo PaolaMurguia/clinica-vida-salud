@@ -290,3 +290,17 @@ Usa `CtrlHistoriaClinica@storeAtencion` y `RegistroAtencion::crear()`, como la t
 | CU21 | `updateAtencion()` también acepta `dictado_voz`; la marca se conserva una vez puesta (un registro dictado sigue figurando como dictado). | El documento solo nombra storeAtencion(); así no se pierde la marca al corregir. | Aplicado. |
 | CU21 | Además de la acción `CREAR`, la bitácora registra `DICTADO_VOZ` cuando el registro se dictó (como en `04_poblacion.sql`). | Paso 5 y datos de prueba. | Aplicado. |
 | CU21 | Las pruebas automáticas cubren el servidor; el reconocimiento de voz se prueba a mano (Chrome o Edge con micrófono). | El navegador de las pruebas de Laravel no ejecuta JavaScript. | Pendiente de la prueba manual de la autora. |
+
+### CU23 – Generar reportes
+
+`CtrlReportes` tiene exactamente index(), generar() y exportar(). Vista `reportes`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU23 | Son 8 tipos de reporte, los del paso 1: citas de una fecha, por médico, por especialidad, por estado, pacientes registrados, atendidas/canceladas/inasistencias del período, agenda diaria de cada médico e ingresos por método de pago. Los de una fecha exigen «fecha»; los demás, «desde» y «hasta» (máximo 366 días). Form Request `Administracion/GenerarReporteRequest`. | Pasos 1 a 4. | Aplicado. |
+| CU23 | exportar() reutiliza generar() (`->getData()`) para armar el mismo reporte sin métodos nuevos; así la bitácora registra la generación y la exportación (paso 7). | Regla 1 y B13. | Aplicado. |
+| CU23 | `Cita::contarPorEstado()` cuenta sobre `listarReporte()` con los mismos filtros; `Pago::ingresosPorMetodo()` suma `monto_paciente` de los pagos en estado Pagado por fecha de cobro (lo que entró a caja). `fn_ingresos` queda como referencia. | El documento no fija qué monto ni qué fecha cuentan como ingreso. | Aplicado; la autora puede cambiarlo. |
+| CU23 | PDF con `barryvdh/laravel-dompdf` (D9, aprobado): el HTML se arma en el controlador con los textos escapados, sin una vista nueva; horizontal si el reporte tiene más de 5 columnas. CSV con `;` y BOM (como CU04). Impresión con `window.print()` y una hoja `@media print` que oculta la barra y los filtros. | D9. | Aplicado. |
+| CU23 | Sin datos: la pantalla lo informa y no muestra los botones de exportar; exportar sin datos vuelve con el aviso y no genera archivo. Si falla la exportación, vuelve al reporte en pantalla con un mensaje sin detalles internos. | Excepciones 2 y 3. | Aplicado. |
+| CU23 | Ningún reporte incluye diagnósticos ni datos clínicos; los pacientes muestran código, nombre, CI, edad y estado. | RN18. | Aplicado; probado. |
+| CU23 | `composer audit` informa avisos de seguridad en paquetes Symfony que ya estaban instalados (no en dompdf). | No se actualizaron dependencias fuera del alcance del CU. | Pendiente: actualizar con `composer update symfony/*` en un paso aparte. |

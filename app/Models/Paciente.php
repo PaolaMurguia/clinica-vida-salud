@@ -118,6 +118,15 @@ class Paciente extends Model
         return self::findOrFail($id);
     }
 
+    /** CU23: pacientes registrados en el período (fecha de registro), del más antiguo al más reciente. */
+    public static function listarRegistrados(string $desde, string $hasta): Collection
+    {
+        return self::whereDate('fecha_registro', '>=', $desde)
+            ->whereDate('fecha_registro', '<=', $hasta)
+            ->orderBy('fecha_registro')
+            ->get();
+    }
+
     /** CU10: busca la ficha por CI (para crearla o vincularla a la cuenta nueva). */
     public static function buscarPorCI(string $ci): ?self
     {

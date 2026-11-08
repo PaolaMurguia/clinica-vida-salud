@@ -8,6 +8,7 @@ use App\Http\Controllers\Administracion\CtrlBloqueos;
 use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
+use App\Http\Controllers\Administracion\CtrlReportes;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
 use App\Http\Controllers\Citas\CtrlAgenda;
 use App\Http\Controllers\Citas\CtrlCitas;
@@ -141,6 +142,12 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::get('/bloqueos', [CtrlBloqueos::class, 'index'])->name('bloqueos.index');
     Route::post('/bloqueos', [CtrlBloqueos::class, 'store'])->name('bloqueos.store');
     Route::delete('/bloqueos/{bloqueo}', [CtrlBloqueos::class, 'destroy'])->whereNumber('bloqueo')->name('bloqueos.destroy');
+
+    // CU23 – Generar reportes: UI_Reportes (V.reportes) → CtrlReportes (solo lectura, sin diagnósticos)
+    // elegirReporte() → index · generar() → generar · exportar() → exportar (formato csv o pdf)
+    Route::get('/reportes', [CtrlReportes::class, 'index'])->name('reportes.index');
+    Route::get('/reportes/generar', [CtrlReportes::class, 'generar'])->name('reportes.generar');
+    Route::get('/reportes/exportar', [CtrlReportes::class, 'exportar'])->name('reportes.exportar');
 });
 
 // =====================================================================

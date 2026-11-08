@@ -67,6 +67,22 @@ class Pago extends Model
         $this->update(['metodo_pago' => $metodoPago, 'estado' => 'Pagado', 'fecha_pago' => now()]);
     }
 
+    /**
+     * CU23: ingresos cobrados (pagos en estado Pagado) por método de pago en el período de la fecha de cobro:
+     * [método => ['cantidad' => n, 'total' => monto pagado por los pacientes]]. fn_ingresos queda como referencia.
+     */
+    public static function ingresosPorMetodo(string $desde, string $hasta): Collection
+    {
+        return self::where('estado', 'Pagado')
+            ->whereDate('fecha_pago', '>=', $desde)
+            ->whereDate('fecha_pago', '<=', $hasta)
+            ->selectRaw('metodo_pago, COUNT(*) AS cantidad, COALESCE(SUM(monto_paciente), 0) AS total')
+            ->groupBy('metodo_pago')
+            ->orderBy('metodo_pago')
+            ->get()
+            ->mapWithKeys(fn ($fila) => [$fila->metodo_pago => ['cantidad' => (int) $fila->cantidad, 'total' => (float) $fila->total]]);
+    }
+
     /** CU25: pagos pendientes, los más antiguos primero, para su seguimiento. */
     public static function listarPendientes(): Collection
     {

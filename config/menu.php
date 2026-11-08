@@ -20,6 +20,7 @@ return [
             ['texto' => 'Buscar paciente', 'ruta' => 'pacientes.buscar',    'descripcion' => 'Por CI, nombre o apellido (CU09)'],
             ['texto' => 'Agenda',         'ruta' => 'agenda.index',         'descripcion' => 'Citas de cada médico por día o semana (CU18)'],
             ['texto' => 'Bloqueos',       'ruta' => 'bloqueos.index',       'descripcion' => 'Feriados y bloqueos de agenda (CU24)'],
+            ['texto' => 'Reportes',       'ruta' => 'reportes.index',       'descripcion' => 'Citas, pacientes e ingresos con exportación (CU23)'],
         ],
         'Recepcionista' => [
             ['texto' => 'Pacientes',       'ruta' => 'pacientes.index',               'descripcion' => 'Registro de pacientes (CU08)'],
