@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administracion;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administracion\CambiarEstadoRequest;
 use App\Http\Requests\Administracion\StoreHorarioRequest;
+use App\Models\Cita;
 use App\Models\Horario;
 use App\Models\Medico;
 use App\Services\ServicioBitacora;
@@ -71,11 +72,31 @@ class CtrlHorarios extends Controller
             return $volver->with('error', 'No se puede activar: se superpone con otro horario activo del médico ese día.');
         }
 
+        // B4 (ciclo 2): citas futuras dentro de este horario (mismo día de la semana y horas); se exige confirmar
+        $citas = $activar ? collect() : Cita::listarAgenda($horario->medico_id, today(), today()->addYears(2))
+            ->filter(fn (Cita $cita) => in_array($cita->estado, Cita::VIGENTES, true)
+                && $cita->fecha->isoWeekday() === $horario->dia_semana
+                && $cita->hora_inicio >= $horario->hora_inicio && $cita->hora_inicio < $horario->hora_fin)
+            ->values();
+        $nombre = Horario::DIAS[$horario->dia_semana] . ' ' . substr($horario->hora_inicio, 0, 5) . '-' . substr($horario->hora_fin, 0, 5);
+        if ($citas->isNotEmpty() && ! $request->boolean('confirmar')) {
+            return $volver->with('citasFuturas', [
+                'accion'      => route('horarios.cambiarEstado', $horario),
+                'descripcion' => "el horario $nombre",
+                'citas'       => $citas->map(fn (Cita $cita) => "{$cita->fecha->format('d/m/Y')} " . substr($cita->hora_inicio, 0, 5)
+                    . " · {$cita->codigo} · {$cita->paciente->apellidos}, {$cita->paciente->nombres} ({$cita->estado})")->all(),
+            ]);
+        }
+
         $horario->cambiarEstado($activar);
         ServicioBitacora::registrar(ServicioBitacora::ACCION, $activar ? 'ACTIVAR' : 'DESACTIVAR', 'Horarios', $horario->id,
-            ($activar ? 'Activación' : 'Desactivación') . ' del horario ' . Horario::DIAS[$horario->dia_semana]
-            . ' ' . substr($horario->hora_inicio, 0, 5) . '-' . substr($horario->hora_fin, 0, 5) . " del médico {$horario->medico->codigo}");
+            ($activar ? 'Activación' : 'Desactivación') . " del horario $nombre del médico {$horario->medico->codigo}"
+            . ($citas->isNotEmpty() ? " con {$citas->count()} cita(s) futuras" : ''));
 
-        return $volver->with('exito', 'Horario ' . ($activar ? 'activado.' : 'desactivado.'));
+        $respuesta = $volver->with('exito', 'Horario ' . ($activar ? 'activado.' : 'desactivado.'));
+
+        return $citas->isNotEmpty()
+            ? $respuesta->with('aviso', "El horario tenía {$citas->count()} cita(s) futuras: la recepción debe reprogramarlas o cancelarlas (CU15, CU16).")
+            : $respuesta;
     }
 }

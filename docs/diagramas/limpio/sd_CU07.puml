@@ -1,0 +1,86 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU07 Definir horarios de atención
+
+actor "Administrador" as A
+boundary "V.horarios" as VH
+boundary "V.formHorario" as VF
+control "CtrlHorarios" as CH
+entity "M.Medico" as MM
+entity "M.Horario" as MH
+entity "M.Bitacora" as MB
+
+activate A
+alt mostrar
+  A -> VH : mostrar(medico_id)
+  activate VH
+  VH -> CH : index(medico_id)
+  deactivate VH
+  activate CH
+  CH -> MM : medico = obtener(medico_id)
+  activate MM
+  MM -->> CH : medico
+  deactivate MM
+  CH -> MH : horarios = listar(medico.id)
+  activate MH
+  MH -->> CH : horarios
+  deactivate MH
+  CH -> VH : view(medico, horarios)
+  activate VH
+  deactivate VH
+  deactivate CH
+end
+
+alt agregar
+  A -> VF : agregar(datos)
+  activate VF
+  VF -> CH : store(datos)
+  deactivate VF
+  activate CH
+  CH -> MH : ok = seSuperpone(medico_id, dia, inicio, fin)
+  activate MH
+  MH -->> CH : ok
+  deactivate MH
+  alt no se superpone
+    CH -> MH : crear(datos)
+    activate MH
+    deactivate MH
+    CH -> MH : franjas = generarFranjas()
+    activate MH
+    MH -->> CH : franjas
+    deactivate MH
+    CH -> MB : registrar(CREAR)
+    activate MB
+    deactivate MB
+    CH -> VH : view(horarios, franjas)
+    activate VH
+    deactivate VH
+  else se superpone
+    CH -> VF : view(error)
+    activate VF
+    deactivate VF
+  end
+  deactivate CH
+end
+
+alt cambiar estado
+  A -> VH : cambiarEstado(horario, accion)
+  activate VH
+  VH -> CH : cambiarEstado(horario, accion)
+  deactivate VH
+  activate CH
+  CH -> MH : cambiarEstado(activar)
+  activate MH
+  deactivate MH
+  CH -> MB : registrar(accion)
+  activate MB
+  deactivate MB
+  CH -> VH : view(horarios)
+  activate VH
+  deactivate VH
+  deactivate CH
+end
+deactivate A
+@enduml

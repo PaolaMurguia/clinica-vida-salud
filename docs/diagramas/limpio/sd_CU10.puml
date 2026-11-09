@@ -1,0 +1,54 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU10 Registrarse como paciente
+
+actor "Paciente" as P
+boundary "V.registro" as VR
+control "CtrlRegistro" as CR
+entity "M.Paciente" as MP
+entity "M.Rol" as MR
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate P
+P -> VR : registrarse(datos)
+activate VR
+VR -> CR : registrar(datos)
+deactivate VR
+activate CR
+CR -> MP : ficha = buscarPorCI(ci)
+activate MP
+MP -->> CR : ficha
+deactivate MP
+CR -> MU : cuenta = buscarPorLogin(ci)
+activate MU
+MU -->> CR : cuenta
+deactivate MU
+
+alt CI nuevo o ficha sin cuenta con datos iguales
+  CR -> MP : crear(datos)
+  activate MP
+  deactivate MP
+  CR -> MR : rol = obtener(Paciente)
+  activate MR
+  MR -->> CR : rol
+  deactivate MR
+  CR -> MU : crear(ci, correo, clave, rol)
+  activate MU
+  deactivate MU
+  CR -> MB : registrar(REGISTRO_PACIENTE)
+  activate MB
+  deactivate MB
+else CI con cuenta o datos que no coinciden
+  CR -> MB : registrar(REGISTRO_RECHAZADO)
+  activate MB
+  deactivate MB
+  CR -> VR : view(error)
+  activate VR
+  deactivate VR
+end
+deactivate CR
+deactivate P
+@enduml

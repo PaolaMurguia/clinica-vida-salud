@@ -1,0 +1,79 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU27 Recuperar contraseña
+
+actor "Administrador, Recepcionista,\nMédico o Paciente" as A
+boundary "V.recuperarClave" as VR
+boundary "V.login" as VL
+control "CtrlRecuperacion" as CR
+entity "M.Usuario" as MU
+entity "M.Recuperacion" as MRC
+entity "M.Bitacora" as MB
+
+activate A
+== Solicitar enlace ==
+A -> VR : solicitar(login)
+activate VR
+VR -> CR : solicitarEnlace(login)
+deactivate VR
+activate CR
+CR -> MU : usuario = buscarPorLogin(login)
+activate MU
+MU -->> CR : usuario
+deactivate MU
+opt cuenta activa
+  CR -> MRC : n = contarRecientes(usuario.id)
+  activate MRC
+  MRC -->> CR : n
+  deactivate MRC
+  opt menos de 3 solicitudes en la hora
+    CR -> MRC : crear(usuario.id)
+    activate MRC
+    deactivate MRC
+    CR -> MB : registrar(SOLICITUD_RECUPERACION)
+    activate MB
+    deactivate MB
+  end
+end
+CR -> VR : view(mensaje)
+activate VR
+deactivate VR
+deactivate CR
+
+== Restablecer ==
+A -> VR : restablecer(token, clave)
+activate VR
+VR -> CR : restablecer(token, clave)
+deactivate VR
+activate CR
+CR -> MRC : solicitud = validar(token)
+activate MRC
+MRC -->> CR : solicitud
+deactivate MRC
+
+alt enlace válido
+  CR -> MU : actualizarClave(clave)
+  activate MU
+  deactivate MU
+  CR -> MU : reiniciarIntentos()
+  activate MU
+  deactivate MU
+  CR -> MRC : marcarUsado()
+  activate MRC
+  deactivate MRC
+  CR -> MB : registrar(RESTABLECER_CLAVE)
+  activate MB
+  deactivate MB
+  CR -> VL : view(login)
+  activate VL
+  deactivate VL
+else enlace vencido, usado o alterado
+  CR -> VR : view(aviso)
+  activate VR
+  deactivate VR
+end
+deactivate CR
+deactivate A
+@enduml

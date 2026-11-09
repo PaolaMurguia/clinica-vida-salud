@@ -1,0 +1,120 @@
+@startuml sd_CU10
+' CU10 – Registrarse como paciente
+' Fuente: routes/web.php (GET/POST /registro), CtrlRegistro@registrar, RegistrarRequest,
+'         Paciente, Usuario, Rol, Bitacora
+title sd CU10 Registrarse como paciente
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Paciente (visitante)" as P
+boundary "V.registro" as VR
+control "CtrlRegistro" as CR
+entity "M.Paciente" as MP
+entity "M.Rol" as MR
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate P
+P -> VR : registrarse(ci, nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, clave, acepta_privacidad)
+activate VR
+VR -> CR : registrar(request)
+activate CR
+note right of CR
+  Middleware guest.
+  RegistrarRequest: obligatorios, RNF05, acepta_privacidad,
+  menor de 18 con contacto de emergencia (B10);
+  after(): correo libre (Usuario::buscarPorLogin).
+end note
+
+CR -> MP : ficha = buscarPorCI(ci)
+activate MP
+MP -->> CR : ficha : ?Paciente
+deactivate MP
+CR -> MU : existente = buscarPorLogin(ci)
+activate MU
+MU -->> CR : existente : ?Usuario
+deactivate MU
+
+alt [el CI ya tiene una cuenta]
+  CR -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, REGISTRO_RECHAZADO
+  MB -->> CR : bitacora : Bitacora
+  deactivate MB
+  CR -->> VR : back() «El CI ya tiene una cuenta… ¿Olvidó su contraseña?»
+else [ficha existente con datos que no coinciden o inactiva]
+  CR -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, REGISTRO_RECHAZADO
+  MB -->> CR : bitacora : Bitacora
+  deactivate MB
+  CR -->> VR : back() «Los datos no coinciden… Acuda a recepción.»
+else [CI nuevo o ficha sin cuenta con fecha de nacimiento y apellidos iguales]
+  note right of CR : DB::transaction
+  alt [ficha existente: vincular]
+    CR -> MP : actualizar(acepta_privacidad, correo si no tenía)
+    activate MP
+    deactivate MP
+  else [CI nuevo]
+    CR -> MP : paciente = crear(datos)
+    activate MP
+    MP -->> CR : paciente : Paciente
+    deactivate MP
+  end
+  CR -> MR : rol = obtener('Paciente')
+  activate MR
+  MR -->> CR : rol : Rol
+  deactivate MR
+  CR -> MU : usuario = crear(nombre_usuario = ci, correo, clave, rol_id, paciente_id)
+  activate MU
+  MU -->> CR : usuario : Usuario
+  deactivate MU
+  CR -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, REGISTRO_PACIENTE
+  MB -->> CR : bitacora : Bitacora
+  deactivate MB
+  note right of CR
+    Auth::login(usuario), session()->regenerate(),
+    session('rol', 'Paciente')
+  end note
+  CR -->> VR : redirect(portal) «Su cuenta fue creada…»
+end
+deactivate CR
+
+VR -->> P : muestra el portal o el mensaje
+deactivate VR
+deactivate P
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU02 Cerrar sesión
+
+actor "Administrador, Recepcionista,\nMédico o Paciente" as A
+boundary "V.menu" as VM
+boundary "V.login" as VL
+control "CtrlSesion" as CS
+entity "M.Bitacora" as MB
+
+activate A
+A -> VM : salir()
+activate VM
+VM -> CS : cerrarSesion()
+deactivate VM
+activate CS
+CS -> MB : registrar(LOGOUT)
+activate MB
+deactivate MB
+CS -> VL : view(login)
+activate VL
+deactivate VL
+deactivate CS
+deactivate A
+@enduml

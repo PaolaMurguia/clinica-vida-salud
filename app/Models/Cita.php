@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,16 @@ class Cita extends Model
 {
     protected $table = 'cita';
     public $timestamps = false;
+
+    public const ESTADOS = ['Programada', 'Confirmada', 'Atendida', 'Cancelada', 'Inasistencia'];
+
+    /** Estados en los que la cita todavía se puede reprogramar, cancelar o cambiar (CU15, CU16, CU17). */
+    public const VIGENTES = ['Programada', 'Confirmada'];
+
+    /** RN17: horas mínimas de anticipación para que el paciente cancele o reprograme desde el portal. */
+    public const PLAZO_PACIENTE_HORAS = 2;
+
+    public const POR_PAGINA = 20;
 
     protected $fillable = [
         'paciente_id', 'medico_id', 'especialidad_id', 'usuario_registro_id', 'fecha', 'hora_inicio',
@@ -87,5 +98,134 @@ class Cita extends Model
             ->where('estado', '<>', 'Cancelada')
             ->orderBy('hora_inicio')
             ->get(['hora_inicio', 'hora_fin']);
+    }
+
+    /** CU15, CU16, CU17, CU20, CU25: obtiene la cita con sus datos principales. */
+    public static function obtener(int $id): self
+    {
+        return self::with(['paciente', 'medico', 'especialidad'])->findOrFail($id);
+    }
+
+    /**
+     * CU14, CU15: indica si otra cita no cancelada del médico se superpone con el rango (RN07, RN09).
+     * $exceptoId excluye la propia cita al reprogramar.
+     */
+    public static function existeConflicto(int $medicoId, Carbon $fecha, string $horaInicio, string $horaFin, ?int $exceptoId = null): bool
+    {
+        return self::where('medico_id', $medicoId)
+            ->whereDate('fecha', $fecha->toDateString())
+            ->where('estado', '<>', 'Cancelada')
+            ->where('hora_inicio', '<', $horaFin)
+            ->where('hora_fin', '>', $horaInicio)
+            ->when($exceptoId, fn ($q) => $q->where('id', '<>', $exceptoId))
+            ->exists();
+    }
+
+    /**
+     * CU19: citas del paciente de la más reciente a la más antigua, con filtros opcionales
+     * de estado y rango de fechas (incluye pasadas, canceladas e inasistencias, RN10).
+     */
+    public static function listarPorPaciente(int $pacienteId, array $filtros = []): LengthAwarePaginator
+    {
+        return self::with(['medico', 'especialidad'])
+            ->where('paciente_id', $pacienteId)
+            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
+            ->when($filtros['desde'] ?? null, fn ($q, $desde) => $q->whereDate('fecha', '>=', $desde))
+            ->when($filtros['hasta'] ?? null, fn ($q, $hasta) => $q->whereDate('fecha', '<=', $hasta))
+            ->orderByDesc('fecha')->orderByDesc('hora_inicio')
+            ->paginate(self::POR_PAGINA)
+            ->withQueryString();
+    }
+
+    /**
+     * CU16: cambia la cita a Cancelada y guarda el motivo; el registro no se elimina (RN10) y la franja
+     * queda libre (RN09). trg_validar_transicion rechaza cancelar una cita que no esté Programada o Confirmada.
+     */
+    public function cancelar(string $motivo): void
+    {
+        $this->update(['estado' => 'Cancelada', 'motivo_cancelacion' => mb_substr($motivo, 0, 200)]);
+    }
+
+    /**
+     * CU15: cambia la fecha y el horario; conserva el código, el paciente, el médico, la especialidad y el
+     * estado. trg_validar_cita vuelve a validar la nueva franja y ex_cita_no_solapada la superposición.
+     */
+    public function reprogramar(Carbon $fecha, string $horaInicio, string $horaFin): void
+    {
+        $this->update(['fecha' => $fecha->toDateString(), 'hora_inicio' => $horaInicio, 'hora_fin' => $horaFin]);
+    }
+
+    /** CU17: estados a los que puede pasar la cita desde su estado actual (RF10, igual que fn_validar_transicion). */
+    public const TRANSICIONES = [
+        'Programada' => ['Confirmada', 'Atendida', 'Cancelada', 'Inasistencia'],
+        'Confirmada' => ['Atendida', 'Cancelada', 'Inasistencia'],
+    ];
+
+    /** CU17: cambia el estado de la cita; trg_validar_transicion rechaza las transiciones no permitidas. */
+    public function cambiarEstado(string $estado): void
+    {
+        $this->update(['estado' => $estado]);
+    }
+
+    /** CU18: citas del médico en el rango, ordenadas por fecha y hora, con filtro opcional de estado. */
+    public static function listarAgenda(int $medicoId, Carbon $desde, Carbon $hasta, ?string $estado = null): Collection
+    {
+        return self::with(['paciente', 'especialidad'])
+            ->where('medico_id', $medicoId)
+            ->whereDate('fecha', '>=', $desde->toDateString())
+            ->whereDate('fecha', '<=', $hasta->toDateString())
+            ->when($estado, fn ($q) => $q->where('estado', $estado))
+            ->orderBy('fecha')->orderBy('hora_inicio')
+            ->get();
+    }
+
+    /** CU24: citas no canceladas de la fecha, del médico o de toda la clínica (medico_id nulo). */
+    public static function listarPorFecha(Carbon $fecha, ?int $medicoId = null): Collection
+    {
+        return self::with(['paciente', 'medico'])
+            ->whereDate('fecha', $fecha->toDateString())
+            ->where('estado', '<>', 'Cancelada')
+            ->when($medicoId, fn ($q) => $q->where('medico_id', $medicoId))
+            ->orderBy('hora_inicio')
+            ->get();
+    }
+
+    /**
+     * CU23: citas para los reportes (solo lectura, consultas parametrizadas), ordenadas por fecha, médico y hora.
+     * Filtros opcionales: desde, hasta, medico_id, especialidad_id y estado (uno o varios).
+     */
+    public static function listarReporte(array $filtros): Collection
+    {
+        return self::with(['paciente', 'medico', 'especialidad'])
+            ->when($filtros['desde'] ?? null, fn ($q, $desde) => $q->whereDate('fecha', '>=', $desde))
+            ->when($filtros['hasta'] ?? null, fn ($q, $hasta) => $q->whereDate('fecha', '<=', $hasta))
+            ->when($filtros['medico_id'] ?? null, fn ($q, $medico) => $q->where('medico_id', $medico))
+            ->when($filtros['especialidad_id'] ?? null, fn ($q, $especialidad) => $q->where('especialidad_id', $especialidad))
+            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->whereIn('estado', (array) $estado))
+            ->orderBy('fecha')->orderBy('medico_id')->orderBy('hora_inicio')
+            ->get();
+    }
+
+    /**
+     * CU23: cantidad de citas por estado con los mismos filtros del reporte; los estados pedidos sin citas valen 0.
+     */
+    public static function contarPorEstado(array $filtros): Collection
+    {
+        $conteo = self::listarReporte($filtros)->countBy('estado');
+
+        return collect((array) ($filtros['estado'] ?? self::ESTADOS))
+            ->mapWithKeys(fn (string $estado) => [$estado => (int) ($conteo[$estado] ?? 0)]);
+    }
+
+    /** CU20: indica si la cita ya tiene registro de atención (uno por cita, D7). */
+    public static function existeAtencion(int $citaId): bool
+    {
+        return RegistroAtencion::where('cita_id', $citaId)->exists();
+    }
+
+    /** CU14: registra la cita en estado Programada y recupera el código CM-0001 que asignó la base de datos. */
+    public static function crear(array $datos): self
+    {
+        return self::create($datos + ['estado' => 'Programada'])->refresh();
     }
 }

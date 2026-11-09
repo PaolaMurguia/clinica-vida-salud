@@ -1,0 +1,157 @@
+@startuml sd_CU11
+' CU11 – Gestionar perfil del paciente
+' Fuente: routes/web.php (/perfil, /perfil/antecedentes), CtrlPerfil@show, @update, @storeAntecedente,
+'         UpdatePerfilRequest, StoreAntecedenteRequest, Paciente, Historia, Antecedente, Seguro, Usuario, Bitacora
+title sd CU11 Gestionar perfil del paciente
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Paciente" as P
+boundary "V.perfil" as VP
+control "CtrlPerfil" as CP
+entity "M.Paciente" as MP
+entity "M.Historia" as MH
+entity "M.Antecedente" as MA
+entity "M.Seguro" as MS
+entity "M.Usuario" as MU
+entity "M.Bitacora" as MB
+
+activate P
+note over P, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Paciente.
+  Solo su propia información (RN18). El cambio de contraseña enlaza a CU26.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  P -> VP : mostrar()
+  activate VP
+  VP -> CP : show(request)
+  activate CP
+  CP -> MP : paciente = obtener(usuario.paciente_id)
+  activate MP
+  MP -->> CP : paciente : Paciente
+  deactivate MP
+  CP -> MH : historia = obtener(paciente.id)
+  activate MH
+  note right of MH : la crea si no existe (B7)
+  MH -->> CP : historia : Historia
+  deactivate MH
+  CP -> MA : antecedentes = listar(historia.id)
+  activate MA
+  MA -->> CP : antecedentes : Collection
+  deactivate MA
+  CP -> MS : seguro = obtenerActivo(paciente.id)
+  activate MS
+  MS -->> CP : seguro : ?Seguro
+  deactivate MS
+  CP -->> VP : view('perfil', paciente, historia, antecedentes, seguro)
+  deactivate CP
+  VP -->> P : datos, contacto, antecedentes, seguro y preferencias
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- guardar
+alt [guardar]
+  P -> VP : guardar(telefono, correo, direccion, contacto_emerg_nombre, contacto_emerg_tel, notif_correo, notif_alerta, acepta_privacidad)
+  activate VP
+  VP -> CP : update(request)
+  activate CP
+  note right of CP
+    UpdatePerfilRequest: CI, nombres, apellidos y fecha de nacimiento
+    prohibidos; after(): correo libre (Usuario::buscarPorLogin).
+  end note
+  CP -> MP : paciente = obtener(usuario.paciente_id)
+  activate MP
+  MP -->> CP : paciente : Paciente
+  deactivate MP
+  note right of CP : DB::transaction
+  CP -> MP : actualizar(datos)
+  activate MP
+  deactivate MP
+  opt [correo distinto del de la cuenta]
+    CP -> MU : actualizarCorreo(correo)
+    activate MU
+    deactivate MU
+  end
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, MODIFICAR, Perfil
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(perfil.show) «Su perfil fue actualizado.»
+  deactivate CP
+  VP -->> P : confirmación
+  deactivate VP
+end
+
+' ---------------------------------------------------------------- declarar antecedente
+alt [declarar antecedente]
+  P -> VP : declararAntecedente(tipo_sangre, tipo, descripcion)
+  activate VP
+  VP -> CP : storeAntecedente(request)
+  activate CP
+  note right of CP
+    StoreAntecedenteRequest: tipos Alergia, Enfermedad crónica,
+    Medicamento y Familiar; tipo de sangre solo si aún no está
+    registrado (Historia::obtener).
+  end note
+  CP -> MH : historia = obtener(usuario.paciente_id)
+  activate MH
+  MH -->> CP : historia : Historia
+  deactivate MH
+  note right of CP : DB::transaction
+  opt [tipo_sangre indicado]
+    note right of CP : historia->update(tipo_sangre)
+  end
+  opt [tipo indicado]
+    CP -> MA : antecedente = crear(historia_clinica_id, tipo, descripcion, origen = Paciente, usuario_id)
+    activate MA
+    MA -->> CP : antecedente : Antecedente
+    deactivate MA
+  end
+  CP -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, DECLARAR_ANTECEDENTE, Perfil
+  MB -->> CP : bitacora : Bitacora
+  deactivate MB
+  CP -->> VP : redirect(perfil.show) «Antecedentes registrados como declarados por usted.»
+  deactivate CP
+  VP -->> P : confirmación
+  deactivate VP
+end
+
+deactivate P
+
+@enduml

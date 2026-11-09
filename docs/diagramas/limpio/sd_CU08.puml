@@ -1,0 +1,90 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU08 Gestionar pacientes
+
+actor "Recepcionista o\nAdministrador" as R
+boundary "V.pacientes" as VP
+control "CtrlPacientes" as CP
+entity "M.Paciente" as MP
+entity "M.Bitacora" as MB
+
+activate R
+alt mostrar
+  R -> VP : mostrar()
+  activate VP
+  VP -> CP : index()
+  deactivate VP
+  activate CP
+  CP -> MP : pacientes = listar()
+  activate MP
+  MP -->> CP : pacientes
+  deactivate MP
+  CP -> VP : view(pacientes)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+
+alt crear
+  R -> VP : crear(datos)
+  activate VP
+  VP -> CP : store(datos)
+  deactivate VP
+  activate CP
+  CP -> MP : existeCI(ci)
+  activate MP
+  deactivate MP
+  CP -> MP : crear(datos)
+  activate MP
+  deactivate MP
+  CP -> MB : registrar(CREAR)
+  activate MB
+  deactivate MB
+  CP -> VP : view(pacientes)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+
+alt editar
+  R -> VP : editar(paciente, datos)
+  activate VP
+  VP -> CP : update(paciente, datos)
+  deactivate VP
+  activate CP
+  CP -> MP : existeCI(ci)
+  activate MP
+  deactivate MP
+  CP -> MP : actualizar(datos)
+  activate MP
+  deactivate MP
+  CP -> MB : registrar(MODIFICAR)
+  activate MB
+  deactivate MB
+  CP -> VP : view(pacientes)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+
+alt desactivar
+  R -> VP : desactivar(paciente)
+  activate VP
+  VP -> CP : destroy(paciente)
+  deactivate VP
+  activate CP
+  CP -> MP : desactivar()
+  activate MP
+  deactivate MP
+  CP -> MB : registrar(DESACTIVAR)
+  activate MB
+  deactivate MB
+  CP -> VP : view(pacientes)
+  activate VP
+  deactivate VP
+  deactivate CP
+end
+deactivate R
+@enduml

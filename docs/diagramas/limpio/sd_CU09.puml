@@ -1,0 +1,43 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU09 Buscar paciente
+
+actor "Recepcionista o\nAdministrador" as R
+boundary "V.buscarPaciente" as VB
+control "CtrlPacientes" as CP
+entity "M.Paciente" as MP
+
+activate R
+== Buscar ==
+R -> VB : buscar(criterio)
+activate VB
+VB -> CP : buscar(criterio)
+deactivate VB
+activate CP
+CP -> MP : pacientes = buscar(criterio)
+activate MP
+MP -->> CP : pacientes
+deactivate MP
+CP -> VB : view(pacientes)
+activate VB
+deactivate VB
+deactivate CP
+
+== Seleccionar ==
+R -> VB : seleccionar(paciente)
+activate VB
+VB -> CP : show(paciente)
+deactivate VB
+activate CP
+CP -> MP : paciente = obtener(id)
+activate MP
+MP -->> CP : paciente
+deactivate MP
+CP -> VB : view(paciente)
+activate VB
+deactivate VB
+deactivate CP
+deactivate R
+@enduml

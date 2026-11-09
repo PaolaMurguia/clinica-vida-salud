@@ -33,6 +33,21 @@
                         @endforeach
                     </ul>
                     <ul class="navbar-nav">
+                        @if (Route::has('notificaciones'))
+                            @php
+                                // D5: avisos del canal Sistema ya vencidos que el usuario aún no abrió
+                                $sinLeer = \App\Models\Notificacion::where('usuario_id', $usuario->id)->where('canal', 'Sistema')
+                                    ->where('estado', 'Pendiente')->where('fecha_programada', '<=', now())->count();
+                            @endphp
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('notificaciones') ? 'active' : '' }}" href="{{ route('notificaciones') }}">
+                                    Notificaciones
+                                    @if ($sinLeer > 0)
+                                        <span class="badge rounded-pill text-bg-warning" title="Sin leer">{{ $sinLeer }}</span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endif
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {{ $usuario->nombre_usuario }} <span class="badge text-bg-light">{{ $rol }}</span>

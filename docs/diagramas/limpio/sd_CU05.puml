@@ -1,0 +1,90 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU05 Gestionar especialidades
+
+actor "Administrador" as A
+boundary "V.especialidades" as VE
+control "CtrlEspecialidades" as CE
+entity "M.Especialidad" as ME
+entity "M.Bitacora" as MB
+
+activate A
+alt mostrar
+  A -> VE : mostrar()
+  activate VE
+  VE -> CE : index()
+  deactivate VE
+  activate CE
+  CE -> ME : especialidades = listar()
+  activate ME
+  ME -->> CE : especialidades
+  deactivate ME
+  CE -> VE : view(especialidades)
+  activate VE
+  deactivate VE
+  deactivate CE
+end
+
+alt crear
+  A -> VE : crear(datos)
+  activate VE
+  VE -> CE : store(datos)
+  deactivate VE
+  activate CE
+  CE -> ME : existeNombre(nombre)
+  activate ME
+  deactivate ME
+  CE -> ME : crear(datos)
+  activate ME
+  deactivate ME
+  CE -> MB : registrar(CREAR)
+  activate MB
+  deactivate MB
+  CE -> VE : view(especialidades)
+  activate VE
+  deactivate VE
+  deactivate CE
+end
+
+alt editar
+  A -> VE : editar(especialidad, datos)
+  activate VE
+  VE -> CE : update(especialidad, datos)
+  deactivate VE
+  activate CE
+  CE -> ME : existeNombre(nombre)
+  activate ME
+  deactivate ME
+  CE -> ME : actualizar(datos)
+  activate ME
+  deactivate ME
+  CE -> MB : registrar(MODIFICAR)
+  activate MB
+  deactivate MB
+  CE -> VE : view(especialidades)
+  activate VE
+  deactivate VE
+  deactivate CE
+end
+
+alt cambiar estado
+  A -> VE : cambiarEstado(especialidad, accion)
+  activate VE
+  VE -> CE : cambiarEstado(especialidad, accion)
+  deactivate VE
+  activate CE
+  CE -> ME : cambiarEstado(activar)
+  activate ME
+  deactivate ME
+  CE -> MB : registrar(accion)
+  activate MB
+  deactivate MB
+  CE -> VE : view(especialidades)
+  activate VE
+  deactivate VE
+  deactivate CE
+end
+deactivate A
+@enduml

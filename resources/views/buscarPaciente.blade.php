@@ -70,6 +70,10 @@
                     @if (Route::has('disponibilidad.especialidades') && auth()->user()->rol->nombre === 'Recepcionista' && $seleccionado->estado)
                         <a href="{{ route('disponibilidad.especialidades', ['paciente_id' => $seleccionado->id]) }}" class="btn btn-sm btn-outline-primary">Disponibilidad</a>
                     @endif
+                    {{-- CU19: historial de citas, también de un paciente inactivo (RN11) --}}
+                    @if (Route::has('historialCitas.index'))
+                        <a href="{{ route('historialCitas.index', ['paciente_id' => $seleccionado->id]) }}" class="btn btn-sm btn-outline-primary">Historial de citas</a>
+                    @endif
                 </div>
             </div>
             <dl class="row mt-3 mb-0">

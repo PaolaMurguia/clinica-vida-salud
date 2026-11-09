@@ -1,0 +1,135 @@
+@startuml sd_CU12
+' CU12 – Registrar seguro del paciente
+' Fuente: routes/web.php (/pacientes/{paciente}/seguro), CtrlSeguros@index, @store, @destroy,
+'         StoreSeguroRequest, Paciente, Seguro, Bitacora
+title sd CU12 Registrar seguro del paciente
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Recepcionista" as R
+boundary "V.seguro" as VS
+control "CtrlSeguros" as CS
+entity "M.Paciente" as MP
+entity "M.Seguro" as MS
+entity "M.Bitacora" as MB
+
+activate R
+note over R, MB
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Recepcionista.
+  El paciente se localiza antes con CU09.
+end note
+
+' ---------------------------------------------------------------- mostrar
+alt [mostrar]
+  R -> VS : mostrar(paciente)
+  activate VS
+  VS -> CS : index(paciente)
+  activate CS
+  CS -> MP : paciente = obtener(paciente.id)
+  activate MP
+  MP -->> CS : paciente : Paciente
+  deactivate MP
+  CS -> MS : activo = obtenerActivo(paciente.id)
+  activate MS
+  MS -->> CS : activo : ?Seguro
+  deactivate MS
+  note right of CS : anteriores: paciente->seguros() inactivos (Eloquent)
+  CS -->> VS : view('seguro', paciente, activo, anteriores)
+  deactivate CS
+  VS -->> R : seguro activo, si existe, y anteriores
+  deactivate VS
+end
+
+' ---------------------------------------------------------------- registrar
+alt [registrar]
+  R -> VS : registrar(paciente, aseguradora, nro_poliza, tipo_cobertura, porcentaje_cobertura, fecha_inicio, fecha_fin)
+  activate VS
+  VS -> CS : store(request, paciente)
+  activate CS
+  note right of CS
+    StoreSeguroRequest: porcentaje de 0 a 100, fecha_fin >= fecha_inicio;
+    after(): póliza duplicada en la aseguradora (consulta Eloquent).
+  end note
+  note right of CS
+    DB::transaction; QueryException (uq_seguro_poliza,
+    ux_seguro_activo): back() con error
+  end note
+  CS -> MS : activo = obtenerActivo(paciente.id)
+  activate MS
+  MS -->> CS : activo : ?Seguro
+  deactivate MS
+  opt [activo != null]
+    CS -> MS : darDeBaja()
+    activate MS
+    deactivate MS
+  end
+  CS -> MS : seguro = crear(datos + paciente_id, estado = true)
+  activate MS
+  MS -->> CS : seguro : Seguro
+  deactivate MS
+  CS -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, CREAR, Seguros
+  MB -->> CS : bitacora : Bitacora
+  deactivate MB
+  CS -->> VS : redirect(seguros.index) «Seguro registrado…» (+ aviso si fecha_fin < hoy)
+  deactivate CS
+  VS -->> R : confirmación y aviso de seguro vencido
+  deactivate VS
+end
+
+' ---------------------------------------------------------------- dar de baja
+alt [dar de baja]
+  R -> VS : darDeBaja(paciente, seguro)
+  activate VS
+  VS -> CS : destroy(paciente, seguro)
+  activate CS
+  note right of CS : scopeBindings: el seguro pertenece al paciente
+  CS -> MS : darDeBaja()
+  activate MS
+  deactivate MS
+  CS -> MB : registrar(datos)
+  activate MB
+  note right of MB : ServicioBitacora: ACCION, DAR_DE_BAJA, Seguros
+  MB -->> CS : bitacora : Bitacora
+  deactivate MB
+  CS -->> VS : redirect(seguros.index) «Seguro dado de baja.»
+  deactivate CS
+  VS -->> R : confirmación
+  deactivate VS
+end
+
+deactivate R
+
+@enduml

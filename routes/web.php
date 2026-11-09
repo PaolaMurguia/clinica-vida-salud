@@ -4,21 +4,30 @@ use App\Http\Controllers\Acceso\CtrlClave;
 use App\Http\Controllers\Acceso\CtrlRecuperacion;
 use App\Http\Controllers\Acceso\CtrlSesion;
 use App\Http\Controllers\Administracion\CtrlBitacora;
+use App\Http\Controllers\Administracion\CtrlBloqueos;
 use App\Http\Controllers\Administracion\CtrlEspecialidades;
 use App\Http\Controllers\Administracion\CtrlHorarios;
 use App\Http\Controllers\Administracion\CtrlMedicos;
+use App\Http\Controllers\Administracion\CtrlReportes;
 use App\Http\Controllers\Administracion\CtrlUsuarios;
+use App\Http\Controllers\Citas\CtrlAgenda;
+use App\Http\Controllers\Citas\CtrlCitas;
+use App\Http\Controllers\Citas\CtrlHistorialCitas;
+use App\Http\Controllers\Clinica\CtrlExamenes;
+use App\Http\Controllers\Clinica\CtrlHistoriaClinica;
 use App\Http\Controllers\Disponibilidad\CtrlDisponibilidad;
 use App\Http\Controllers\Pacientes\CtrlPacientes;
 use App\Http\Controllers\Pacientes\CtrlPerfil;
 use App\Http\Controllers\Pacientes\CtrlRegistro;
 use App\Http\Controllers\Pacientes\CtrlSeguros;
+use App\Http\Controllers\Pagos\CtrlPagos;
+use App\Models\Notificacion;
 use App\Models\Recuperacion;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Rutas web del ciclo 1, agrupadas por módulo
+| Rutas web de los ciclos 1 y 2, agrupadas por módulo
 |--------------------------------------------------------------------------
 | Middlewares (bootstrap/app.php):
 |  - guest          sin sesión; con sesión abierta lleva al menú o al portal (CU01)
@@ -74,10 +83,26 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal'])->grou
     // CU01, paso 9: menú principal (B1) para el personal y portal para el paciente
     Route::view('/menu', 'menu')->middleware('rol:Administrador,Recepcionista,Médico')->name('menu');
     Route::view('/portal', 'portal')->middleware('rol:Paciente')->name('portal');
+
+    // D5 – Bandeja de notificaciones (todos los roles; closure aprobada por la autora, sin controlador).
+    // D4: al abrirla se envían las notificaciones vencidas y las del canal Sistema del usuario pasan a Enviado.
+    Route::get('/notificaciones', function () {
+        $usuarioId = auth()->id();
+        Notificacion::enviarPendientes($usuarioId);
+
+        return view('notificaciones', [
+            'notificaciones' => Notificacion::where('usuario_id', $usuarioId)
+                ->where('canal', 'Sistema')
+                ->where('estado', '<>', 'Anulado')
+                ->where('fecha_programada', '<=', now())
+                ->orderByDesc('fecha_programada')
+                ->paginate(20),
+        ]);
+    })->name('notificaciones');
 });
 
 // =====================================================================
-// Módulo Administración: CU03, CU04, CU05, CU06, CU07 (solo Administrador)
+// Módulo Administración: CU03, CU04, CU05, CU06, CU07; ciclo 2: CU23, CU24 (solo Administrador)
 // =====================================================================
 Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Administrador'])->group(function () {
     // CU03 – Gestionar usuarios y roles: UI_Usuarios (V.usuarios) → CtrlUsuarios
@@ -110,6 +135,19 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:A
     Route::get('/horarios', [CtrlHorarios::class, 'index'])->name('horarios.index');
     Route::post('/horarios', [CtrlHorarios::class, 'store'])->name('horarios.store');
     Route::patch('/horarios/{horario}/estado', [CtrlHorarios::class, 'cambiarEstado'])->name('horarios.cambiarEstado');
+
+    // --- Ciclo 2 ---
+    // CU24 – Gestionar feriados y bloqueos: UI_Bloqueos (V.bloqueos) → CtrlBloqueos (sin edición, D10)
+    // mostrar() → index (medico_id, desde, hasta) · agregar() → store (confirmar si hay citas) · eliminar() → destroy
+    Route::get('/bloqueos', [CtrlBloqueos::class, 'index'])->name('bloqueos.index');
+    Route::post('/bloqueos', [CtrlBloqueos::class, 'store'])->name('bloqueos.store');
+    Route::delete('/bloqueos/{bloqueo}', [CtrlBloqueos::class, 'destroy'])->whereNumber('bloqueo')->name('bloqueos.destroy');
+
+    // CU23 – Generar reportes: UI_Reportes (V.reportes) → CtrlReportes (solo lectura, sin diagnósticos)
+    // elegirReporte() → index · generar() → generar · exportar() → exportar (formato csv o pdf)
+    Route::get('/reportes', [CtrlReportes::class, 'index'])->name('reportes.index');
+    Route::get('/reportes/generar', [CtrlReportes::class, 'generar'])->name('reportes.generar');
+    Route::get('/reportes/exportar', [CtrlReportes::class, 'exportar'])->name('reportes.exportar');
 });
 
 // =====================================================================
@@ -164,4 +202,103 @@ Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:P
     Route::get('/perfil', [CtrlPerfil::class, 'show'])->name('perfil.show');
     Route::put('/perfil', [CtrlPerfil::class, 'update'])->name('perfil.update');
     Route::post('/perfil/antecedentes', [CtrlPerfil::class, 'storeAntecedente'])->name('perfil.storeAntecedente');
+});
+
+// =====================================================================
+// Módulo Citas (ciclo 2): CU14, CU15, CU16, CU17, CU18, CU19
+// =====================================================================
+
+// --- Recepcionista y Paciente (el paciente solo con sus propias citas, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Paciente'])->group(function () {
+    // CU14 – Programar cita: UI_ProgramarCita (V.programarCita)
+    // mostrar() → CtrlCitas@create (también el comprobante con ?cita=) · programar() → CtrlCitas@store
+    Route::get('/citas/programar', [CtrlCitas::class, 'create'])->name('citas.create');
+    Route::post('/citas', [CtrlCitas::class, 'store'])->name('citas.store');
+
+    // CU15 – Reprogramar cita: UI_ReprogramarCita (V.reprogramarCita)
+    // mostrar() → CtrlCitas@edit (?fecha=) · reprogramar() → CtrlCitas@update
+    Route::get('/citas/{cita}/reprogramar', [CtrlCitas::class, 'edit'])->whereNumber('cita')->name('citas.edit');
+    Route::put('/citas/{cita}', [CtrlCitas::class, 'update'])->whereNumber('cita')->name('citas.update');
+
+    // CU16 – Cancelar cita: UI_CancelarCita (V.cancelarCita)
+    // mostrar() → CtrlCitas@show · cancelar() → CtrlCitas@cancelar
+    Route::get('/citas/{cita}', [CtrlCitas::class, 'show'])->whereNumber('cita')->name('citas.show');
+    Route::patch('/citas/{cita}/cancelar', [CtrlCitas::class, 'cancelar'])->whereNumber('cita')->name('citas.cancelar');
+});
+
+// --- Recepcionista, Administrador y Paciente (el paciente solo su propio historial, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Administrador,Paciente'])->group(function () {
+    // CU19 – Consultar historial de citas: UI_HistorialCitas (V.historialCitas)
+    // mostrar() y filtrar() → CtrlHistorialCitas@index (?paciente_id=, estado, desde, hasta) · verDetalle() → @show
+    Route::get('/historial-citas', [CtrlHistorialCitas::class, 'index'])->name('historialCitas.index');
+    Route::get('/historial-citas/{cita}', [CtrlHistorialCitas::class, 'show'])->whereNumber('cita')->name('historialCitas.show');
+});
+
+// --- Recepcionista y Médico ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico'])->group(function () {
+    // CU17 – Registrar asistencia: UI_Agenda (V.agenda) confirmar(), atender(), registrarInasistencia()
+    // → CtrlCitas@cambiarEstado con el parámetro accion (B2)
+    Route::patch('/citas/{cita}/estado', [CtrlCitas::class, 'cambiarEstado'])->whereNumber('cita')->name('citas.cambiarEstado');
+});
+
+// --- Recepcionista, Médico y Administrador (el médico solo su propia agenda, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico,Administrador'])->group(function () {
+    // CU18 – Consultar agenda médica: UI_Agenda (V.agenda)
+    // mostrar() → CtrlAgenda@index (hoy) · filtrar() → CtrlAgenda@filtrar (medico_id, desde, hasta, vista, estado)
+    Route::get('/agenda', [CtrlAgenda::class, 'index'])->name('agenda.index');
+    Route::get('/agenda/filtrar', [CtrlAgenda::class, 'filtrar'])->name('agenda.filtrar');
+});
+
+// =====================================================================
+// Módulo Pagos (ciclo 2): CU25 (solo Recepcionista)
+// =====================================================================
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista'])->group(function () {
+    // CU25 – Registrar pago de consulta: UI_Pagos (V.pagos)
+    // mostrar() → CtrlPagos@create (?cita= o ?codigo=; sin cita, pagos pendientes) · cobrar() y dejarPendiente() → @store
+    // completar() → @update · comprobante → @show
+    Route::get('/pagos', [CtrlPagos::class, 'create'])->name('pagos.create');
+    Route::post('/pagos', [CtrlPagos::class, 'store'])->name('pagos.store');
+    Route::get('/pagos/{pago}', [CtrlPagos::class, 'show'])->whereNumber('pago')->name('pagos.show');
+    Route::patch('/pagos/{pago}', [CtrlPagos::class, 'update'])->whereNumber('pago')->name('pagos.update');
+});
+
+// =====================================================================
+// Módulo Clinica (ciclo 2): CU20, CU21, CU22
+// =====================================================================
+
+// --- Médico y Paciente (la recepción no ve diagnósticos, RN18) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico,Paciente'])->group(function () {
+    // CU20 – Gestionar historia clínica: UI_HistoriaClinica (V.historiaClinica) mostrar() → CtrlHistoriaClinica@show
+    // El médico abre la de un paciente que atiende o atendió; el paciente, la suya («Mi historia clínica»)
+    Route::get('/historia-clinica/{paciente}', [CtrlHistoriaClinica::class, 'show'])->whereNumber('paciente')->name('historiaClinica.show');
+    Route::get('/mi-historia-clinica', [CtrlHistoriaClinica::class, 'show'])->name('historiaClinica.mia');
+});
+
+// --- Solo Médico ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico'])->group(function () {
+    // CU20 – registrarAtencion() → @storeAtencion y @updateAtencion · agregarAntecedente() → @storeAntecedente
+    Route::post('/historia-clinica/{paciente}/atenciones', [CtrlHistoriaClinica::class, 'storeAtencion'])->whereNumber('paciente')->name('historiaClinica.storeAtencion');
+    Route::put('/atenciones/{registro}', [CtrlHistoriaClinica::class, 'updateAtencion'])->whereNumber('registro')->name('historiaClinica.updateAtencion');
+    Route::post('/historia-clinica/{paciente}/antecedentes', [CtrlHistoriaClinica::class, 'storeAntecedente'])->whereNumber('paciente')->name('historiaClinica.storeAntecedente');
+});
+
+// --- Recepcionista, Médico y Paciente ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista,Médico,Paciente'])->group(function () {
+    // CU22 – Gestionar resultados de laboratorio: UI_Examenes (V.examenes)
+    // buscar() → CtrlExamenes@index · verResultados() → @show (RN18 en el controlador)
+    Route::get('/examenes', [CtrlExamenes::class, 'index'])->name('examenes.index');
+    Route::get('/examenes/{examen}', [CtrlExamenes::class, 'show'])->whereNumber('examen')->name('examenes.show');
+});
+
+// --- CU22: solo el médico solicita y revisa (RN20) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Médico'])->group(function () {
+    // solicitar() → CtrlExamenes@store (desde V.historiaClinica) · marcarRevisado() → @marcarRevisado
+    Route::post('/examenes', [CtrlExamenes::class, 'store'])->name('examenes.store');
+    Route::patch('/examenes/{examen}/revisado', [CtrlExamenes::class, 'marcarRevisado'])->whereNumber('examen')->name('examenes.marcarRevisado');
+});
+
+// --- CU22: la recepcionista registra los resultados (RN20) ---
+Route::middleware(['auth', 'auth.session', 'sin.cache', 'clave.temporal', 'rol:Recepcionista'])->group(function () {
+    // registrarResultados() → CtrlExamenes@registrarResultados
+    Route::post('/examenes/{examen}/resultados', [CtrlExamenes::class, 'registrarResultados'])->whereNumber('examen')->name('examenes.registrarResultados');
 });

@@ -201,4 +201,10 @@ class Usuario extends Authenticatable
             'debe_cambiar_clave' => false,
         ]);
     }
+
+    /** CU17: solo un médico con el permiso asignado en CU03 marca citas como atendidas. */
+    public function puedeMarcarAtendida(): bool
+    {
+        return $this->medico_id !== null && $this->puede_marcar_atendida && $this->estado;
+    }
 }

@@ -1,0 +1,80 @@
+@startuml
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+hide footbox
+title sd CU12 Registrar seguro del paciente
+
+actor "Recepcionista" as R
+boundary "V.seguro" as VS
+control "CtrlSeguros" as CS
+entity "M.Paciente" as MP
+entity "M.Seguro" as MS
+entity "M.Bitacora" as MB
+
+activate R
+alt mostrar
+  R -> VS : mostrar(paciente)
+  activate VS
+  VS -> CS : index(paciente)
+  deactivate VS
+  activate CS
+  CS -> MP : paciente = obtener(id)
+  activate MP
+  MP -->> CS : paciente
+  deactivate MP
+  CS -> MS : seguro = obtenerActivo(paciente.id)
+  activate MS
+  MS -->> CS : seguro
+  deactivate MS
+  CS -> VS : view(paciente, seguro)
+  activate VS
+  deactivate VS
+  deactivate CS
+end
+
+alt registrar
+  R -> VS : registrar(paciente, datos)
+  activate VS
+  VS -> CS : store(paciente, datos)
+  deactivate VS
+  activate CS
+  CS -> MS : activo = obtenerActivo(paciente.id)
+  activate MS
+  MS -->> CS : activo
+  deactivate MS
+  opt existe un seguro activo
+    CS -> MS : darDeBaja()
+    activate MS
+    deactivate MS
+  end
+  CS -> MS : crear(datos)
+  activate MS
+  deactivate MS
+  CS -> MB : registrar(CREAR)
+  activate MB
+  deactivate MB
+  CS -> VS : view(seguro)
+  activate VS
+  deactivate VS
+  deactivate CS
+end
+
+alt dar de baja
+  R -> VS : darDeBaja(seguro)
+  activate VS
+  VS -> CS : destroy(paciente, seguro)
+  deactivate VS
+  activate CS
+  CS -> MS : darDeBaja()
+  activate MS
+  deactivate MS
+  CS -> MB : registrar(DAR_DE_BAJA)
+  activate MB
+  deactivate MB
+  CS -> VS : view(seguro)
+  activate VS
+  deactivate VS
+  deactivate CS
+end
+deactivate R
+@enduml

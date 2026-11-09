@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 /**
  * Entidad HISTORIAL_CITA: cambios de estado de cada cita (tabla historial_estado_cita, RNF14).
@@ -28,5 +29,26 @@ class HistorialCita extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    /** CU19: cambios de estado de la cita en orden cronológico, con el usuario que hizo cada uno. */
+    public static function listarPorCita(int $citaId): Collection
+    {
+        return self::with('usuario')->where('cita_id', $citaId)->orderBy('fecha_cambio')->orderBy('id')->get();
+    }
+
+    /**
+     * CU14, CU15, CU16, CU17: registra un cambio de la cita con el usuario responsable,
+     * el estado anterior, el nuevo y una observación (motivo o nueva fecha).
+     */
+    public static function registrar(Cita $cita, ?string $estadoAnterior, string $estadoNuevo, ?string $observacion = null, ?int $usuarioId = null): self
+    {
+        return self::create([
+            'cita_id'         => $cita->id,
+            'usuario_id'      => $usuarioId ?? auth()->id(),
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo'    => $estadoNuevo,
+            'observacion'     => $observacion !== null ? mb_substr($observacion, 0, 200) : null,
+        ]);
     }
 }

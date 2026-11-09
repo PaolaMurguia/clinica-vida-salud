@@ -18,7 +18,9 @@ class CambiarEstadoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'accion' => ['required', Rule::in(['activar', 'desactivar'])],
+            'accion'    => ['required', Rule::in(['activar', 'desactivar'])],
+            // B4 (ciclo 2): confirma la desactivación de un médico u horario con citas futuras
+            'confirmar' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -1,0 +1,84 @@
+@startuml sd_CU09
+' CU09 – Buscar paciente
+' Fuente: routes/web.php (GET /pacientes/buscar, GET /pacientes/{paciente}),
+'         CtrlPacientes@buscar, @show, BuscarPacienteRequest, Paciente
+title sd CU09 Buscar paciente
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ArrowColor #000000
+skinparam sequence {
+  LifeLineBorderColor #000000
+  LifeLineBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupBackgroundColor #FFFFFF
+  DividerBackgroundColor #FFFFFF
+}
+skinparam actor {
+  BackgroundColor #FADEAA
+  BorderColor #000000
+}
+skinparam boundary {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam control {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #C4ECEF
+  BorderColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+hide footbox
+
+actor "Recepcionista o Administrador" as R
+boundary "V.buscarPaciente" as VB
+control "CtrlPacientes" as CP
+entity "M.Paciente" as MP
+
+activate R
+note over R, MP
+  Middlewares auth, auth.session, sin.cache, clave.temporal y rol:Recepcionista,Administrador.
+end note
+
+== Pasos 1 a 3: buscar ==
+R -> VB : buscar(criterio)
+activate VB
+VB -> CP : buscar(request)
+activate CP
+note right of CP : BuscarPacienteRequest: criterio de al menos 3 caracteres
+opt [criterio indicado]
+  CP -> MP : resultados = buscar(criterio)
+  activate MP
+  note right of MP : sin distinguir mayúsculas ni tildes
+  MP -->> CP : resultados : Collection
+  deactivate MP
+end
+CP -->> VB : view('buscarPaciente', criterio, demasiados, resultados.take(50))
+deactivate CP
+VB -->> R : coincidencias, «sin resultados: registrar (CU08)» o «precise la búsqueda» (> 50)
+deactivate VB
+
+== Paso 4: seleccionar ==
+R -> VB : seleccionar(paciente)
+activate VB
+VB -> CP : show(paciente)
+activate CP
+CP -> MP : seleccionado = obtener(paciente.id)
+activate MP
+MP -->> CP : seleccionado : Paciente
+deactivate MP
+CP -->> VB : view('buscarPaciente', seleccionado)
+deactivate CP
+VB -->> R : paciente seleccionado (editar CU08, seguro CU12, disponibilidad CU13)
+deactivate VB
+
+deactivate R
+
+@enduml

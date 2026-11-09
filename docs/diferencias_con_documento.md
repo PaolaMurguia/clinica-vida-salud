@@ -46,7 +46,7 @@ Los controladores tienen exactamente los métodos del documento: `CtrlUsuarios` 
 | CU06 | Al editar se conservan las especialidades ya asignadas aunque hoy estén inactivas; no se pueden agregar especialidades inactivas nuevas. | Evita que la sincronización (B5) quite una especialidad solo por estar inactiva. | Aplicado. |
 | CU07 | `formHorario` se incluye dentro de `horarios`, y las franjas del horario recién guardado se muestran en un aviso. Cada horario de la lista muestra también sus franjas. | V.horarios y V.formHorario del documento; paso 4. | Aplicado. |
 | CU07 | Reactivar un horario (B6) solo se permite si no se superpone con otro activo. | Lo exige la restricción EXCLUDE `ex_horario_no_solapado`. | Aplicado. |
-| CU03–CU07 | Desactivar un médico con citas futuras no muestra advertencias. | B4: se aplazó al ciclo 2. | Sin cambios. |
+| CU03–CU07 | Desactivar un médico con citas futuras no mostraba advertencias. | B4: se aplazó al ciclo 2. | Resuelto en el ciclo 2 para CU06 y CU07 (ver «B4 – Advertencia de citas futuras»). |
 
 ## Revisión del paso 5 (Pacientes)
 
@@ -92,7 +92,7 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 | CU13 | La recepcionista consulta para el paciente seleccionado en CU09 (botón «Disponibilidad»); sin paciente, la vista pide seleccionarlo. Un paciente siempre consulta para sí mismo, aunque envíe otro `paciente_id` (RN18). | Paso 1: las especialidades dependen de la edad del paciente (RN15). | Aplicado. |
 | CU13 | En el paso 1 la edad se calcula a hoy; al consultar franjas se usa la edad en la fecha elegida. | RN15: «edad del paciente en la fecha de la cita». | Aplicado. |
 | CU13 | El médico se obtiene con `Medico::listarPorEspecialidad()` y la especialidad con `Especialidad::listarPorEdad()` (los métodos de la tabla de CU13), no con `obtener()`. | Fidelidad con la tabla de clases de CU13. | Aplicado. |
-| CU13 | Las franjas pasadas del día no se muestran; las ocupadas se muestran como «Ocupada», sin datos de la cita ni del paciente. Las franjas libres no son seleccionables todavía. | Pasos 5 y 6; programar la cita es CU14 (ciclo 2). | Aplicado. |
+| CU13 | Las franjas pasadas del día no se muestran; las ocupadas se muestran como «Ocupada», sin datos de la cita ni del paciente. Desde CU14 (ciclo 2) cada franja libre es un enlace para programar la cita. | Pasos 5 y 6; programar la cita es CU14. | Aplicado (actualizado en CU14). |
 | CU13 | Form Requests `EspecialidadesRequest`, `MedicosRequest` y `FranjasRequest` (`<método>Request`, porque el módulo tiene un solo controlador). | Convención aprobada. | Aplicado. |
 
 ## Nombres que no están en el documento (aprobados por la autora)
@@ -123,3 +123,194 @@ Los controladores tienen exactamente los métodos del documento: `CtrlPacientes`
 - **Usuario de los pacientes:** `04_poblacion.sql` crea `maria.lopez` y `luis.fernandez`, pero la decisión A7 exige el CI. El archivo no se modifica: `PoblacionSeeder` actualiza `nombre_usuario` con el CI después de ejecutarlo.
 - **Secuencias:** la primera migración borra las 5 secuencias de los códigos antes de ejecutar `01_esquema.sql`, porque `migrate:fresh` solo borra tablas.
 - **`tests/Feature/ModelosTest.php`:** queda fuera de los módulos porque prueba los 22 modelos y la población, no un caso de uso.
+
+---
+
+# Ciclo 2 (`docs/casos_de_uso_ciclo2.md`)
+
+Las decisiones D1 a D13 del documento del ciclo 2 fueron aprobadas por la autora al iniciar el ciclo. En D4, el envío se hace con el comando `notificaciones:enviar` y, además, al abrir la bandeja (Render gratuito no tiene tareas programadas).
+
+## Nombres que no están en las secciones «Clases» (aprobados por la autora)
+
+| Elemento | Nombre | Motivo |
+|---|---|---|
+| Método de modelo | `Notificacion::enviarPendientes()` | D3 y D4: un solo punto de envío para el comando, la bandeja y los avisos inmediatos. |
+| Bandeja (D5) | vista `notificaciones` con ruta closure (sin controlador) | Mismo patrón aprobado en CU27 (validación del enlace). |
+| Comando (D4) | `notificaciones:enviar`, closure en `routes/console.php` | Sin clase con nombre nuevo. |
+| Traductor de errores de la BD (D1, RNF08) | `withExceptions` en `bootstrap/app.php` | Errores de triggers y restricciones convertidos en mensajes claros, sin clase nueva. |
+| Advertencia al desactivar (B4) | CU06 y CU07, con confirmación como en CU24 | Se implementa al final del ciclo 2. |
+
+## Cambios al documento del ciclo 2 pedidos por la autora
+
+- CU14 y CU15: excepción «el médico no atiende la especialidad seleccionada» (la exige `fn_validar_cita`).
+- CU14: nota de que un paciente (o médico) sin cuenta no recibe notificaciones (`notificacion.usuario_id` es obligatorio).
+- Orden de implementación: CU25 antes que CU24.
+
+## Revisión por caso de uso
+
+### CU14 – Programar cita
+
+`CtrlCitas` tiene solo create() y store() (más adelante, los métodos de CU15, CU16 y CU17). Vista `programarCita`. Todos los métodos de la tabla de clases de CU14 se usan; el cálculo de la franja es una expresión con `Horario::obtenerDelDia()` y `generarFranjas()`, sin métodos nuevos en el controlador.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU14 | El comprobante (paso 9) se muestra en `programarCita` con `GET /citas/programar?cita={id}` (create()). Usa `Cita::obtener()`, que es de la tabla de CU15/CU16. Un paciente solo ve el comprobante de sus citas (403). | El documento no nombra una vista para el comprobante; mismo patrón que `?editar=` (B1). | Aplicado. |
+| CU14 | Form Requests `Citas/CreateCitaRequest` (mostrar) y `StoreCitaRequest` (programar, agrega modalidad y motivo). Las reglas del paso 5 están en el método protegido `validarFranja()` del Form Request, que reutilizará CU15 (con `citaExcluida()`), como `esMenor()` o `reglasMedico()` del ciclo 1. En el Form Request el paciente y el médico se cargan con `find()` (B13) para informar si no existen. | Convención aprobada de Form Requests; B13. | Aplicado. |
+| CU14 | La hora de fin no la envía el navegador: se toma de la franja del horario (RN08). | Evita duraciones manipuladas. | Aplicado. |
+| CU14 | El paciente siempre programa para sí: si no envía `paciente_id` se usa su ficha; si envía el de otra persona, se rechaza con «Solo puede programar citas para usted (RN18)». | Excepción RN18 (en CU13 se reemplazaba en silencio; aquí el documento pide manejar la excepción). | Aplicado. |
+| CU14 | D2: si la restricción `ex_cita_no_solapada` rechaza la inserción (SQLSTATE 23P01), `store()` lleva de nuevo a la disponibilidad del mismo médico y fecha con «La franja ya fue ocupada por otro usuario». | Excepción 1 y D2. | Aplicado; probado con un insert concurrente simulado. |
+| CU14 | Notificaciones: confirmación y recordatorio al paciente, aviso «Agenda» al médico, solo si tienen cuenta. El paciente las recibe por los canales que eligió en su perfil (CU11): `notif_alerta` = bandeja y `notif_correo` = correo; el médico, solo en la bandeja. Si faltan menos de 24 horas para la cita, el recordatorio se programa para el momento. | D3; el documento no fija qué pasa con las preferencias de CU11 ni con citas cercanas. | Aplicado. |
+| CU14 | El contador de la bandeja cuenta los avisos del canal Sistema ya vencidos y en estado Pendiente; al abrir la bandeja pasan a Enviado (equivale a leídos). | La tabla no tiene una columna de lectura; no se agregan columnas. | Aplicado. |
+| CU14 | Un correo inmediato se envía al confirmar la transacción (`DB::afterCommit`), no dentro de ella. | Si la transacción se revierte, no se envía un aviso falso. | Aplicado. |
+| CU14 | El traductor de errores (bootstrap/app.php) muestra el texto de los RAISE EXCEPTION de los triggers (ya redactados para el usuario) y un mensaje por nombre de restricción para EXCLUDE, UNIQUE y CHECK; vuelve a la página anterior con los datos ingresados. | D1, RNF08. | Aplicado. |
+
+### CU19 – Consultar historial de citas
+
+`CtrlHistorialCitas` tiene exactamente index() y show(). Vista `historialCitas` (mostrar, filtrar y verDetalle en la misma vista).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU19 | Una sola ruta para el personal y el paciente: `GET /historial-citas?paciente_id=`. El paciente no envía `paciente_id` (se usa el suyo); si envía el de otra persona se rechaza (RN18). | Paso 1: «Mis citas» del paciente y el historial abierto desde CU09. | Aplicado. |
+| CU19 | El detalle (show) usa `Cita::obtener()`, de la tabla de CU15/CU16. Un paciente que abre una cita ajena recibe 403. | Paso 4; RN18. | Aplicado. |
+| CU19 | Form Request `Citas/FiltrarHistorialCitasRequest` (como `FiltrarBitacoraRequest` de CU04). El rango de fechas no tiene límite de días. | El documento solo pide rechazar el rango invertido. | Aplicado. |
+| CU19 | Paginación de 20 citas por página. | Pacientes con muchas citas. | Aplicado. |
+| CU19 | Los botones «Reprogramar» y «Cancelar» aparecen solo para la recepcionista y el paciente, en citas Programadas o Confirmadas; para el paciente, solo si faltan al menos 2 horas (si no, el aviso de RN17). El administrador solo consulta. | Paso 5; actores de CU15 y CU16. Los botones se activan cuando existen las rutas de CU15 y CU16. | Aplicado. |
+
+### CU16 – Cancelar cita
+
+`CtrlCitas` suma show() y cancelar(), exactamente los de la tabla de CU16. Vista `cancelarCita`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU16 | Dentro de la transacción la cita se vuelve a leer con `lockForUpdate()` (B13) antes de cancelarla; si otro usuario la cambió, se informa «La cita cambió de estado mientras tanto». `trg_validar_transicion` respalda la regla. | Paso 5. | Aplicado. |
+| CU16 | La confirmación (paso 2) es un `confirm()` del navegador al enviar el formulario. | El documento pide confirmación sin fijar la forma. | Aplicado. |
+| CU16 | El aviso de cancelación incluye el motivo y va al paciente y al médico (si tienen cuenta). Solo se anulan los recordatorios (tipo Recordatorio) pendientes o fallidos. | Paso 9 y D3. | Aplicado. |
+| CU16 | La recepcionista puede cancelar sin el plazo de 2 horas; el paciente fuera de plazo ve el aviso de RN17 en lugar del formulario. Form Request `Citas/CancelarCitaRequest`. | RN17 aplica solo al portal. | Aplicado. |
+| CU16 | Tras cancelar se muestra el detalle de la cita en `historialCitas` (CU19). | Paso 10: «confirma la cancelación». | Aplicado. |
+
+### CU15 – Reprogramar cita
+
+`CtrlCitas` suma edit() y update(), exactamente los de la tabla de CU15. Vista `reprogramarCita`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU15 | Para mostrar las franjas ocupadas, edit() usa `Cita::listarOcupadas()` (tabla de CU13); la propia cita se marca como «actual». El cálculo es una expresión dentro de edit(), sin métodos nuevos. | Paso 2: «fechas y franjas libres del mismo médico (CU13)». | Aplicado. |
+| CU15 | Form Requests `EditCitaRequest` (fecha a consultar) y `UpdateCitaRequest`, que hereda de `CreateCitaRequest` y reutiliza `validarFranja()` sin contar la propia cita. El paciente, el médico y la especialidad se toman siempre de la cita (no del formulario). | Paso 7 y convención de Form Requests. | Aplicado. |
+| CU15 | El historial guarda la reprogramación con estado anterior = estado nuevo y la observación «Reprogramada del dd/mm/aaaa hh:mm al dd/mm/aaaa hh:mm»; en `historialCitas` se muestra como «Reprogramación». | Paso 8: «con el usuario responsable y la nueva fecha»; la tabla no tiene columnas de fechas. | Aplicado. |
+| CU15 | El comprobante actualizado (paso 10) es el de CU14 (`programarCita` con `?cita=`). | Mismo comprobante, sin otra vista. | Aplicado. |
+| CU15 | D2: si la restricción EXCLUDE rechaza la nueva franja, se vuelve a `reprogramarCita` con la misma fecha y el aviso. Dentro de la transacción la cita se lee con `lockForUpdate()` (B13). | Excepción 3. | Aplicado. |
+| CU15 | Con el médico inactivo, la vista no ofrece franjas e indica cancelar y programar otra cita. | Excepciones 5 y 7. | Aplicado. |
+
+### CU17 – Registrar asistencia
+
+`CtrlCitas` suma cambiarEstado(), el método de la tabla de CU17. Las operaciones confirmar(), atender() y registrarInasistencia() de `V.agenda` envían el parámetro `accion` (`confirmar`, `atender`, `registrarInasistencia`), igual que B2 del ciclo 1.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU17 | Se implementa antes que CU18 (orden de la autora): el commit de CU17 lleva el servidor y las pruebas; los botones se agregan a `V.agenda` en CU18. | Orden aplicado. | Aplicado. |
+| CU17 | Las reglas están en el Form Request `Citas/CambiarEstadoCitaRequest` (llama a `Usuario::puedeMarcarAtendida()`); las transiciones están en la constante `Cita::TRANSICIONES`, igual que `fn_validar_transicion`, que las respalda. | Convención del ciclo 1 (reglas en `after()`). | Aplicado. |
+| CU17 | La recepcionista puede confirmar en cualquier momento antes del cambio a un estado final; Atendida e Inasistencia solo desde la hora de inicio (D6). El médico solo marca Atendida, y solo en sus citas. | Paso 2 y D6. | Aplicado. |
+| CU17 | Excepción 6 (dos usuarios a la vez): la transacción vuelve a leer la cita con `lockForUpdate()`; si su estado ya cambió, el segundo recibe «Transición no permitida: la cita ya cambió de estado». | Excepción 6. | Aplicado; probado. |
+| CU17 | `Usuario::puedeMarcarAtendida()` exige además que la cuenta sea de un médico y esté activa. | RN12. | Aplicado. |
+
+### CU18 – Consultar agenda médica
+
+`CtrlAgenda` tiene exactamente index() y filtrar(). Vista `agenda`, que también tiene los botones de CU17.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU18 | index() muestra el día de hoy delegando en filtrar() con los valores por defecto (no hay métodos nuevos). | Pasos 1 y 2. | Aplicado. |
+| CU18 | Filtros: médico, «desde», «hasta», vista (día o semana, que empieza el lunes) y estado. El rango máximo es de 31 días. Form Request `Citas/FiltrarAgendaRequest`. | Paso 2 y excepción 2; el documento no fija un máximo. | Aplicado. |
+| CU18 | El médico no ve el selector de médicos; si envía el id de otro médico, se rechaza (RN18). | Paso 1 y excepción 3. | Aplicado. |
+| CU18 | Botones por fila: la recepción ve «Confirmar» (Programada) e «Inasistencia» (desde la hora de inicio); el médico con permiso ve «Atendida» (desde la hora de inicio). Los enlaces a la historia clínica (CU20) y al cobro (CU25) aparecen cuando existen sus rutas. El administrador solo consulta. | Paso 5 y CU17 (D6). | Aplicado. |
+| CU18 | Se agregó «Agenda» al menú del administrador, la recepcionista y el médico (este último no tenía opciones). | `config/menu.php`. | Aplicado. |
+
+### CU25 – Registrar pago de consulta
+
+`CtrlPagos` tiene exactamente create(), store(), update() y show(). Vista `pagos` (mostrar, cobrar, dejarPendiente y completar).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU25 | create() sin cita muestra los pagos pendientes (`Pago::listarPendientes()`) y un buscador por código; con `?cita=` o `?codigo=` muestra el cobro. Si la cita ya tiene pago, lleva al comprobante existente (excepción 2). | Paso 1 («por su código») y postcondición (pendientes identificados). | Aplicado. |
+| CU25 | Form Requests `Pagos/CreateRequest`, `StoreRequest` y `UpdateRequest` (`<método>Request`, porque el módulo tiene un solo controlador, como en Disponibilidad). | Convención aprobada. | Aplicado. |
+| CU25 | Para avisar que el seguro no está vigente (excepción 3) se usa `Seguro::obtenerActivo()` (tabla de CU11/CU12). | El documento pide avisarlo. | Aplicado. |
+| CU25 | En pantalla, los montos se calculan con la misma fórmula de la columna generada; lo que se guarda lo calculan la base de datos (`monto_paciente`) y `trg_aplicar_cobertura` (porcentaje). El costo se toma de la especialidad al momento del cobro. | D11, RN19. | Aplicado. |
+| CU25 | Se cobra cualquier cita no cancelada (también Programada, Confirmada o Inasistencia). | Precondición: «la cita existe y no está Cancelada». | Aplicado. |
+| CU25 | La acción (cobrar o dejar pendiente) se envía con el botón pulsado (`accion`); JavaScript exige el método solo al cobrar. | Pasos 4 y 5. | Aplicado. |
+
+### CU24 – Gestionar feriados y bloqueos
+
+`CtrlBloqueos` tiene exactamente index(), store() y destroy(). Vista `bloqueos`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU24 | La confirmación con citas existentes (paso 5) es un segundo envío: el primero vuelve con la lista de citas (`Cita::listarPorFecha()`) y el botón «Confirmar el bloqueo», que reenvía con `confirmar=1`. Al guardar, un aviso recuerda reprogramar o cancelar esas citas. | Paso 5 y D10. | Aplicado. |
+| CU24 | Un bloqueo de toda la clínica y uno de un médico pueden coexistir en la misma fecha; el duplicado es solo con la misma fecha y el mismo ámbito (`Bloqueo::existe()`, respaldado por `uq_bloqueo`). | Excepción 1 y la restricción UNIQUE NULLS NOT DISTINCT. | Aplicado. |
+| CU24 | Filtro de médico con la opción «Toda la clínica» (`medico_id=clinica`). Form Requests `Administracion/StoreBloqueoRequest` y `FiltrarBloqueosRequest`. | Paso 1. | Aplicado. |
+| CU24 | La eliminación pide confirmación con `confirm()` del navegador; se permite eliminar cualquier bloqueo (también de fechas pasadas). | Paso 7; el documento no restringe la fecha. | Aplicado. |
+| CU24 | La bitácora del bloqueo de un médico usa `Medico::obtener()` (tabla de CU03/CU07) para el código del médico. | Descripción legible en CU04. | Aplicado. |
+
+### CU20 – Gestionar historia clínica
+
+`CtrlHistoriaClinica` tiene exactamente show(), storeAtencion(), updateAtencion() y storeAntecedente(). Vista `historiaClinica`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU20 | «Paciente que atiende o atendió» = el médico tiene con él al menos una cita no cancelada (en cualquier otro estado). Se comprueba con una consulta Eloquent (B13) en show() y en `authorize()` de los Form Requests; si no, 403. | RN18 y excepción 4; el documento no define «atiende». | Aplicado. |
+| CU20 | El paciente usa la misma show() desde `GET /mi-historia-clinica` (sin parámetro, para el menú); ve sus atenciones con diagnóstico (paso 9) y solo los exámenes Registrados o Revisados (D8). La recepción y el administrador no tienen acceso (403). | Paso 9, RN18 y D8. | Aplicado. |
+| CU20 | Rangos permitidos de los signos vitales: peso 0,5–400 kg, talla 20–250 cm, temperatura 30–45 °C (igual que el CHECK), presión «sistólica/diastólica» con sistólica 50–260, diastólica 30–160 y sistólica mayor. | El documento pide «rangos permitidos» sin fijarlos; los CHECK de la tabla son más amplios. | Aplicado; la autora puede ajustarlos. |
+| CU20 | Modificar una atención usa `?editar={registro}` en show() (B1) y `PUT /atenciones/{registro}` (updateAtencion). Solo el médico de la cita la modifica (403 para otro). | Excepción 3 y D7. | Aplicado. |
+| CU20 | La fecha de modificación de la historia se actualiza con `Historia::obtener()->update()` (B13) al registrar o modificar una atención, porque `trg_tocar_historia` solo se dispara con los antecedentes. | Paso 5. | Aplicado. |
+| CU20 | El médico puede registrar los seis tipos de antecedente (incluidos «Cirugía» y «Otro»); el paciente sigue con los cuatro de CU11. | Paso 6 y decisión de CU11. | Aplicado. |
+| CU20 | Form Requests `Clinica/StoreAtencionRequest`, `UpdateAtencionRequest` y `StoreAntecedenteRequest` (mismo nombre que el de Pacientes, en otro módulo). | Convención de Form Requests. | Aplicado. |
+
+### CU22 – Gestionar resultados de laboratorio
+
+`CtrlExamenes` tiene exactamente index(), store(), registrarResultados(), show() y marcarRevisado(). Vista `examenes`; solicitar() está en `historiaClinica` (paso 1: «desde la historia clínica»).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU22 | index() según el rol: la recepcionista busca por código o CI/nombre (`ExamenLaboratorio::buscar()`; sin criterio, los Solicitados pendientes); el médico ve sus solicitudes (Registrados primero, consulta Eloquent B13); el paciente, sus exámenes Registrados o Revisados (`listarPorPaciente()`). | Pasos 3, 8 y 9. | Aplicado. |
+| CU22 | Los valores se envían como `valores[nombre del parámetro]`; el Form Request `Clinica/RegistrarResultadosRequest` usa `ParametroLaboratorio::obtenerPorNombre()` y `RangoReferencia::obtenerPorEdad()`; se acepta la coma decimal y se ignoran los campos vacíos. | Paso 5 y excepciones 3 a 7. | Aplicado. |
+| CU22 | `ResultadoLaboratorio::registrar()` guarda el rango y la interpretación calculados con el modelo; `trg_interpretar_resultado` los vuelve a calcular en la base de datos (red de seguridad, D1). | Paso 6 y RN16. | Aplicado. |
+| CU22 | Un examen Registrado admite agregar parámetros nuevos con la misma fecha de muestra (no se cambia la fecha); uno Revisado no se modifica. | Paso 5 («que el examen no esté revisado»). | Aplicado. |
+| CU22 | Acceso: el paciente solo ve sus exámenes con resultados (D8); el médico, los que solicitó o los de pacientes que atiende (RN18); solo el médico solicitante marca Revisado. La recepción ve los valores (no son diagnósticos). | RN18, RN20. | Aplicado. |
+| CU22 | Si el examen tiene cita, la notificación «Resultado» se asocia a ella; si no, va sin cita. | La columna `notificacion.cita_id` es opcional. | Aplicado. |
+| CU22 | Form Request `Clinica/StoreExamenRequest` (solo un médico que atiende al paciente, RN20 y RN18). marcarRevisado() no tiene Form Request (no recibe datos); valida en el controlador y responde con un mensaje. | Convención de CU03 (`restablecerClave()`). | Aplicado. |
+| CU22 | Se agregó «Laboratorio» al menú de la recepcionista y del médico, y «Mis resultados» al portal. | Acceso a la vista. | Aplicado. |
+
+### CU21 – Dictar registro clínico por voz
+
+Usa `CtrlHistoriaClinica@storeAtencion` y `RegistroAtencion::crear()`, como la tabla de CU21. Las operaciones dictar() y detener() de `V.historiaClinica` están en `resources/js/dictado.js` (Web Speech API del navegador; el audio no sale del navegador ni se guarda).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU21 | El dictado agrega el texto reconocido a lo que ya había en el campo y marca el campo oculto `dictado_voz=1`. Idioma `es-BO`. | Pasos 3 y 5. | Aplicado. |
+| CU21 | Mensajes por excepción: navegador sin soporte (se ocultan los botones y se indica usar el teclado), permiso denegado, voz no reconocida (se puede reintentar), sin micrófono y falla de conexión; el formulario sigue funcionando con el teclado. Si el texto supera la longitud del campo se avisa en pantalla y el servidor lo rechaza al guardar. | Excepciones 1 a 5. | Aplicado; prueba manual en el navegador. |
+| CU21 | `updateAtencion()` también acepta `dictado_voz`; la marca se conserva una vez puesta (un registro dictado sigue figurando como dictado). | El documento solo nombra storeAtencion(); así no se pierde la marca al corregir. | Aplicado. |
+| CU21 | Además de la acción `CREAR`, la bitácora registra `DICTADO_VOZ` cuando el registro se dictó (como en `04_poblacion.sql`). | Paso 5 y datos de prueba. | Aplicado. |
+| CU21 | Las pruebas automáticas cubren el servidor; el reconocimiento de voz se prueba a mano (Chrome o Edge con micrófono). | El navegador de las pruebas de Laravel no ejecuta JavaScript. | Pendiente de la prueba manual de la autora. |
+
+### CU23 – Generar reportes
+
+`CtrlReportes` tiene exactamente index(), generar() y exportar(). Vista `reportes`.
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU23 | Son 8 tipos de reporte, los del paso 1: citas de una fecha, por médico, por especialidad, por estado, pacientes registrados, atendidas/canceladas/inasistencias del período, agenda diaria de cada médico e ingresos por método de pago. Los de una fecha exigen «fecha»; los demás, «desde» y «hasta» (máximo 366 días). Form Request `Administracion/GenerarReporteRequest`. | Pasos 1 a 4. | Aplicado. |
+| CU23 | exportar() reutiliza generar() (`->getData()`) para armar el mismo reporte sin métodos nuevos; así la bitácora registra la generación y la exportación (paso 7). | Regla 1 y B13. | Aplicado. |
+| CU23 | `Cita::contarPorEstado()` cuenta sobre `listarReporte()` con los mismos filtros; `Pago::ingresosPorMetodo()` suma `monto_paciente` de los pagos en estado Pagado por fecha de cobro (lo que entró a caja). `fn_ingresos` queda como referencia. | El documento no fija qué monto ni qué fecha cuentan como ingreso. | Aplicado; la autora puede cambiarlo. |
+| CU23 | PDF con `barryvdh/laravel-dompdf` (D9, aprobado): el HTML se arma en el controlador con los textos escapados, sin una vista nueva; horizontal si el reporte tiene más de 5 columnas. CSV con `;` y BOM (como CU04). Impresión con `window.print()` y una hoja `@media print` que oculta la barra y los filtros. | D9. | Aplicado. |
+| CU23 | Sin datos: la pantalla lo informa y no muestra los botones de exportar; exportar sin datos vuelve con el aviso y no genera archivo. Si falla la exportación, vuelve al reporte en pantalla con un mensaje sin detalles internos. | Excepciones 2 y 3. | Aplicado. |
+| CU23 | Ningún reporte incluye diagnósticos ni datos clínicos; los pacientes muestran código, nombre, CI, edad y estado. | RN18. | Aplicado; probado. |
+| CU23 | `composer audit` informa avisos de seguridad en paquetes Symfony que ya estaban instalados (no en dompdf). | No se actualizaron dependencias fuera del alcance del CU. | Pendiente: actualizar con `composer update symfony/*` en un paso aparte. |
+
+### B4 – Advertencia de citas futuras al desactivar (CU06 y CU07)
+
+Aprobado por la autora al iniciar el ciclo 2: solo para médicos (CU06) y horarios (CU07), con confirmación como en CU24. Sin métodos nuevos: `cambiarEstado()` de `CtrlMedicos` y `CtrlHorarios` usa `Cita::listarAgenda()` (tabla de CU18).
+
+| CU | Diferencia | Motivo | Estado |
+|---|---|---|---|
+| CU06 | Desactivar un médico con citas futuras Programadas o Confirmadas (próximos 2 años) muestra la lista y el botón «Confirmar la desactivación» (`confirmar=1`); al confirmar se avisa que la recepción debe reprogramarlas o cancelarlas. Las citas no cambian. | B4. | Aplicado; `Administracion/AdvertenciaCitasFuturasTest`. |
+| CU07 | Igual para un horario: cuentan las citas futuras del médico en ese día de la semana y dentro de sus horas. | B4. | Aplicado. |
+| CU05, CU06, CU07 | `CambiarEstadoRequest` acepta `confirmar` (booleano opcional); en especialidades (CU05) no se usa. Dos pruebas del ciclo 1 (`GestionarMedicosTest`, `DefinirHorariosTest`) ahora envían `confirmar=1`, porque Pérez tiene una cita futura en la población. | Cambio de comportamiento aprobado. | Aplicado. |
