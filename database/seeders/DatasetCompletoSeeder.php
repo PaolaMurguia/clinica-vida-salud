@@ -43,6 +43,7 @@ class DatasetCompletoSeeder extends Seeder
             $agendados = [];
             $pacientesAdultos = collect($pacientes)->filter(fn ($paciente) => $this->edadPaciente($paciente['id']) >= 18)->values()->all();
             $period = CarbonPeriod::create(Carbon::create(2026, 8, 1), Carbon::create(2026, 11, 30));
+            $ocupadosPorMedico = [];
 
             $bloqueadas = DB::table('bloqueo_agenda')->pluck('fecha')->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())->all();
 
@@ -52,12 +53,15 @@ class DatasetCompletoSeeder extends Seeder
                 }
 
                 foreach ($medicos as $medico) {
-                    $slots = $this->obtenerSlotsDisponibles($medico->id, $date);
+                    $slots = array_values(array_filter(
+                        $this->obtenerSlotsDisponibles($medico->id, $date),
+                        fn ($slot) => ! $this->slotOcupado($ocupadosPorMedico, $medico->id, $date->toDateString(), $slot)
+                    ));
                     if (empty($slots)) {
                         continue;
                     }
 
-                    $cantidad = random_int(4, 8);
+                    $cantidad = min(random_int(4, 8), count($slots));
                     shuffle($slots);
                     $slotsSeleccionados = array_slice($slots, 0, $cantidad);
 
@@ -95,6 +99,10 @@ class DatasetCompletoSeeder extends Seeder
 
                         $citaId = DB::table('cita')->insertGetId($cita);
                         $agendados[] = $citaId;
+                        $ocupadosPorMedico[$medico->id][$date->toDateString()][] = [
+                            'inicio' => $slot['inicio'],
+                            'fin' => $slot['fin'],
+                        ];
 
                         $this->registrarHistorialCita($citaId, $cita['usuario_registro_id'], $estado);
 
@@ -346,6 +354,24 @@ class DatasetCompletoSeeder extends Seeder
         ];
 
         return $motivos[random_int(0, count($motivos) - 1)];
+    }
+
+    private function slotOcupado(array $ocupadosPorMedico, int $medicoId, string $fecha, array $slot): bool
+    {
+        $ocupados = $ocupadosPorMedico[$medicoId][$fecha] ?? [];
+
+        foreach ($ocupados as $ocupado) {
+            $inicioNuevo = Carbon::createFromFormat('H:i:s', $slot['inicio']);
+            $finNuevo = Carbon::createFromFormat('H:i:s', $slot['fin']);
+            $inicioExistente = Carbon::createFromFormat('H:i:s', $ocupado['inicio']);
+            $finExistente = Carbon::createFromFormat('H:i:s', $ocupado['fin']);
+
+            if ($inicioNuevo->lt($finExistente) && $inicioExistente->lt($finNuevo)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function registrarHistorialCita(int $citaId, int $usuarioId, string $estado): void
